@@ -2,6 +2,7 @@
 
 namespace REDCapEntity;
 
+use REDCap;
 use RCView;
 
 class StatusMessageQueue {
@@ -34,7 +35,7 @@ class StatusMessageQueue {
 
             $style = $styles[$type];
             foreach ($msgs as $i => $msg) {
-                displayMsg($msg, 'redcap-entity-' . $type . '-' . $i, 'center', $style['color'], $style['icon'] . '.png', 0, false);
+                displayMsg(REDCap::escapeHtml($msg), 'redcap-entity-' . $type . '-' . $i, 'center', $style['color'], $style['icon'] . '.png', 0, false);
             }
         }
 

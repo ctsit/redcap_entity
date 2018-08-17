@@ -2,10 +2,12 @@
 
 namespace REDCapEntity;
 
+use REDCap;
 use RCView;
 
 abstract class Page {
     protected $jsFiles = [];
+    protected $jsSettings = [];
     protected $cssFiles = [];
 
     abstract protected function renderPageBody();
@@ -15,16 +17,21 @@ abstract class Page {
             redirect(APP_PATH_WEBROOT_PARENT);
         }
 
+        $title = RCView::img(['src' => APP_PATH_IMAGES . $icon . '.png']) . ' ' . REDCap::escapeHtml($title);
+
         switch ($context) {
             case 'control_center':
-                $title = RCView::h4([], RCView::img(['src' => APP_PATH_IMAGES . $icon . '.png']) . ' ' . htmlspecialchars($title));
-                $header_path = APP_PATH_DOCROOT . 'ControlCenter/header.php';
-                $footer_path = APP_PATH_DOCROOT . 'ControlCenter/footer.php';
+                $title = RCView::h4([], $title);
+                $header_path = 'ControlCenter/header.php';
+                $footer_path = 'ControlCenter/footer.php';
 
                 break;
 
             case 'project':
-                // TODO
+                $title = RCView::div(['class' => 'projhdr'], $title);
+                $header_path = 'ProjectGeneral/header.php';
+                $footer_path = 'ProjectGeneral/footer.php';
+
                 break;
 
             case 'global':
@@ -37,14 +44,14 @@ abstract class Page {
 
         extract($GLOBALS);
 
-        include_once $header_path;
+        include_once APP_PATH_DOCROOT . $header_path;
         echo $title;
 
+        $this->renderPageBody();
         $this->loadPageScripts();
         $this->loadPageStyles();
-        $this->renderPageBody();
 
-        include_once $footer_path;
+        include_once APP_PATH_DOCROOT . $footer_path;
     }
 
     protected function getValidContexts() {
@@ -52,14 +59,19 @@ abstract class Page {
     }
 
     /**
-     * Includes JS files.
+     * Includes JS files and settings.
      */
     protected function loadPageScripts() {
+        foreach ($this->jsSettings as $key => $setting) {
+            echo '<script>' . $key . ' = ' . json_encode($setting, JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS) . ';</script>';
+        }
+
         foreach ($this->jsFiles as $path) {
             echo '<script src="' . $path . '"></script>';
         }
 
         $this->jsFiles = [];
+        $this->jsSettings = [];
     }
 
     /**

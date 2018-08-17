@@ -9,6 +9,7 @@ namespace REDCapEntity;
 use REDCapEntity\EntityFactory;
 use Exception;
 use RedCapDB;
+use UserRights;
 
 /**
  * Entity class.
@@ -83,7 +84,7 @@ class Entity {
         if (!$this->id) {
             return false;
         }
-
+        
         $entity_type = db_real_escape_string($this->__entityTypeKey);
         if (!db_query('DELETE FROM `redcap_entity_' . $entity_type . '` WHERE id = "' . intval($this->id) . '"')) {
             return false;
@@ -111,8 +112,9 @@ class Entity {
 
                 break;
 
+            case 'date':
             case 'integer':
-                if (intval($value) != $value) {
+                if (!is_numeric($value) || intval($value) != $value) {
                     return false;
                 }
 

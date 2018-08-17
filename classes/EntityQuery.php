@@ -33,7 +33,8 @@ class EntityQuery {
             $cond = 'IS NULL';
         }
         else {
-            if (!in_array($op, ['=', '>', '<', '<=', '>=', '<>', '!='])) {
+            $op = strtoupper($op);
+            if (!in_array($op, ['=', '>', '<', '<=', '>=', '<>', '!=', 'LIKE'])) {
                 $op = '=';
             }
 
@@ -72,13 +73,14 @@ class EntityQuery {
         return $this;
     }
 
-    function execute($load_objects = true) {
+    function execute($load_objects = true, $require_all_conds = true) {
+        $glue = $require_all_conds ? ' AND ' : ' OR ';
         $entity_type = db_real_escape_string($this->entityType);
         $select = $this->countQuery ? 'COUNT(id) count' : 'id';
 
         $sql = 'SELECT ' . $select . ' FROM `redcap_entity_' . $entity_type . '`';
         if (!empty($this->conditions)) {
-            $sql .= ' WHERE ' . implode(' AND ', $this->conditions);
+            $sql .= ' WHERE ' . implode($glue, $this->conditions);
         }
 
         if (!$this->countQuery) {

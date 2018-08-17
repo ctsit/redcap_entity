@@ -48,11 +48,16 @@ class EntityView extends Page {
     }
 
     protected function renderPageBody() {
+        if (($bulk_enabled = !empty($this->getBulkOperations())) && $_SERVER['REQUEST_METHOD'] == 'POST' && !empty($_POST['__operation'])) {
+            $this->bulkOperationSubmit();
+        }
+
         $this->loadStyles();
         $this->renderAddButton();
         $this->renderExposedFilters();
-        $this->renderTable();
+        $this->renderTable($bulk_enabled);
         $this->renderPager();
+        $this->renderBulkOperations();
     }
 
     protected function renderAddButton() {
@@ -80,8 +85,12 @@ class EntityView extends Page {
         // TODO.
     }
 
-    protected function renderTable() {
-        $this->buildTableRows();
+    protected function getBulkOperations() {
+        return empty($this->entityTypeInfo['bulk_operations']) ? [] : $this->entityTypeInfo['bulk_operations'];
+    }
+
+    protected function renderTable($bulk_enabled = false) {
+        $this->buildTableRows($bulk_enabled);
 
         if (empty($this->rows)) {
             echo RCView::div([], $this->getEmptyResultsMessage());
@@ -89,7 +98,7 @@ class EntityView extends Page {
         }
 
         $this->loadTemplate('entity_list', [
-            'header' => $this->getTableHeader(),
+            'header' => $this->getTableHeader($bulk_enabled),
             'rows' => $this->rows,
         ]);
     }
@@ -106,7 +115,43 @@ class EntityView extends Page {
         ]);
     }
 
-    protected function buildTableRows() {
+    protected function renderBulkOperations() {
+        if (!$this->totalRows || !($operations = $this->getBulkOperations())) {
+            return;
+        }
+
+        $form = RCView::hidden(['name' => '__operation']);
+        foreach ($operations as $operation => $info) {
+            $btn_class = 'primary';
+
+            if (!empty($info['color'])) {
+                $btn_classes = [
+                    'green' => 'success',
+                    'yellow' => 'warning',
+                    'red' => 'danger',
+                    'black' => 'dark',
+                    'gray' => 'secondary',
+                    'white' => 'light',
+                    'light_blue' => 'info',
+                ];
+
+                if (isset($btn_classes[$info['color']])) {
+                    $btn_class = $btn_classes[$info['color']];
+                }
+            }
+
+            $form .= RCView::button([
+                'type' => 'submit',
+                'name' => REDCap::escapeHtml($operation),
+                'class' => 'btn btn-' . $btn_class . ' bulk-operation',
+            ], REDCap::escapeHtml($info['label']));
+        }
+
+        $this->jsFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/js/bulk_operations.js');
+        echo RCView::form(['method' => 'post', 'id' => 'redcap-entity-bulk'], $form);
+    }
+
+    protected function buildTableRows($bulk_operations = false) {
         $query = $this->getQuery();
 
         if ($this->pageSize) {
@@ -128,11 +173,11 @@ class EntityView extends Page {
         }
 
         foreach ($entities as $id => $entity) {
-            $this->rows[$id] = $this->buildTableRow($entity);
+            $this->rows[$id] = $this->buildTableRow($entity, $bulk_operations);
         }
     }
 
-    protected function buildTableRow($entity) {
+    protected function buildTableRow($entity, $bulk_checkbox = false) {
         $data = array_map('REDCap::escapeHtml', $entity->getData());
         $properties = $this->entityTypeInfo['properties'] += [
             'id' => ['name' => '#', 'type' => 'integer'],
@@ -141,6 +186,9 @@ class EntityView extends Page {
         ];
 
         $row = [];
+        if ($bulk_checkbox) {
+            $row['__bulk_op'] = RCView::checkbox(['name' => 'entities[]', 'value' => $entity->getId(), 'form' => 'redcap-entity-bulk']);
+        }
 
         foreach (array_keys($this->getTableHeaderLabels()) as $key) {
             if (in_array($key, ['__update', '__delete'])) {
@@ -165,6 +213,11 @@ class EntityView extends Page {
                 continue;
             }
 
+            if (in_array($key, ['created', 'updated'])) {
+                $row[$key] = date('m/d/Y - h:ia', $data[$key]);
+                continue;
+            }
+
             if (!isset($data[$key]) || $data[$key] === '') {
                 $row[$key] = '-';
                 continue;
@@ -173,7 +226,7 @@ class EntityView extends Page {
             $info = $properties[$key];
 
             if (!empty($info['choices']) && isset($info['choices'][$data[$key]])) {
-                $row[$key] = $choices[$data[$key]];
+                $row[$key] = $info['choices'][$data[$key]];
                 continue;
             }
 
@@ -190,8 +243,7 @@ class EntityView extends Page {
 
             switch ($info['type']) {
                 case 'date':
-                    $format = empty($info['format']) ? 'm/d/Y - h:ia' : $info['format'];
-                    $row[$key] = date($format, $data[$key]);
+                    $row[$key] = date('m/d/Y', $data[$key]);
                     break;
 
                 case 'price':
@@ -270,10 +322,14 @@ class EntityView extends Page {
             }
         }
 
+        if (isset($this->entityTypeInfo['special_keys']['project']) && defined('PROJECT_ID')) {
+            unset($labels[$this->entityTypeInfo['special_keys']['project']]);
+        }
+
         return $labels;
     }
 
-    protected function getTableHeader() {
+    protected function getTableHeader($bulk_operations = false) {
         $args = [];
         $url = parse_url($_SERVER['REQUEST_URI']);
         $curr_key = '';
@@ -291,6 +347,10 @@ class EntityView extends Page {
         }
 
         $header = $this->getTableHeaderLabels();
+        if ($bulk_operations) {
+            $header = ['__bulk_op' => RCView::checkbox(['name' => 'all_entities', 'form' => 'redcap-entity-bulk'])] + $header;
+        }
+
         foreach ($this->getSortableColumns() as $key) {
             if (!isset($header[$key])) {
                 continue;
@@ -344,6 +404,30 @@ class EntityView extends Page {
 
     protected function getOperations() {
         return isset($this->entityTypeInfo['operations']) ? $this->entityTypeInfo['operations'] : [];
+    }
+
+    protected function bulkOperationSubmit() {
+        $operations = $this->getBulkOperations();
+        $op = $_POST['__operation'];
+
+        if (!isset($operations[$op]) || empty($_POST['entities'])) {
+            return;
+        }
+
+        $op = $operations[$op];
+        if (!$entities = $this->entityFactory->loadInstances($this->entityTypeKey, $_POST['entities'])) {
+            return;
+        }
+
+        foreach ($entities as $entity) {
+            // TODO: check if method exists.
+            $entity->{$op['method']}();
+        }
+
+        if (!empty($op['success_message'])) {
+            StatusMessageQueue::enqueue($op['success_message']);
+            StatusMessageQueue::clear();
+        }
     }
 
     function loadStyles() {
