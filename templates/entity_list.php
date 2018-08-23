@@ -8,13 +8,16 @@
                     <?php endforeach; ?>
                 </tr>
             </thead>
-            <?php foreach ($rows as $row): ?>
-                <tr>
-                    <?php foreach ($row as $value): ?>
-                        <td><?php echo $value; ?></td>
-                    <?php endforeach; ?>
-                </tr>
-            <?php endforeach; ?>
+            <?php
+                foreach ($rows as $id => $row) {
+                    $output = '';
+                    foreach ($row as $value) {
+                         $output .= RCView::td([], $value);
+                    }
+
+                    echo RCView::tr($rows_attributes[$id], $output);
+                }
+            ?>
         </table>
     </div>
 </div>

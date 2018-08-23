@@ -9,6 +9,7 @@ use RCView;
 use REDCap;
 use REDCapEntity\EntityFactory;
 use REDCapEntity\Page;
+use REDCapEntity\StatusMessageQueue;
 use User;
 
 class EntityView extends Page {
@@ -16,20 +17,23 @@ class EntityView extends Page {
     protected $entityFactory;
     protected $entityTypeKey;
     protected $entityTypeInfo;
+    protected $module;
     protected $pageSize;
     protected $pagerSize;
     protected $currPage;
     protected $rows = [];
+    protected $rowsAttributes = [];
     protected $totalRows = 0;
     protected $context;
 
-    function __construct($entity_type, $page_size = 25, $pager_size = 10) {
+    function __construct($entity_type, $module, $page_size = 25, $pager_size = 10) {
         $this->entityFactory = new EntityFactory();
 
         if (!$info = $this->entityFactory->getEntityTypeInfo($entity_type)) {
             throw new Exception('Invalid entity type.');
         }
 
+        $this->module = $module;
         $this->entityTypeKey = $entity_type;
         $this->entityTypeInfo = $info;
 
@@ -51,6 +55,8 @@ class EntityView extends Page {
         if (($bulk_enabled = !empty($this->getBulkOperations())) && $_SERVER['REQUEST_METHOD'] == 'POST' && !empty($_POST['__operation'])) {
             $this->bulkOperationSubmit();
         }
+
+        StatusMessageQueue::clear();
 
         $this->loadStyles();
         $this->renderAddButton();
@@ -100,6 +106,7 @@ class EntityView extends Page {
         $this->loadTemplate('entity_list', [
             'header' => $this->getTableHeader($bulk_enabled),
             'rows' => $this->rows,
+            'rows_attributes' => $this->rowsAttributes,
         ]);
     }
 
@@ -294,7 +301,12 @@ class EntityView extends Page {
             }
         }
 
+        $this->rowsAttributes[$entity->getId()] = $this->getRowAttributes($entity);
         return $row;
+    }
+
+    protected function getRowAttributes($entity) {
+        return [];
     }
 
     protected function getFilters() {

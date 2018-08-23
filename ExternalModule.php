@@ -17,7 +17,6 @@ require_once 'classes/StatusMessageQueue.php';
 use ExternalModules\AbstractExternalModule;
 use ExternalModules\ExternalModules;
 use REDCapEntity\EntityDB;
-use REDCapEntity\StatusMessageQueue;
 
 /**
  * ExternalModule class for REDCap Entity module.
@@ -29,10 +28,6 @@ class ExternalModule extends AbstractExternalModule {
         define('REDCAP_ENTITY_FORM_URL', $this->getUrl('manager/entity.php'));
         define('REDCAP_ENTITY_FORM_JS_URL', $this->getUrl('manager/js/entity_form.js'));
         define('REDCAP_ENTITY_REFERENCE_URL', $this->getUrl('manager/ajax/entity_reference.php'));
-    }
-
-    function redcap_every_page_top($project_id) {
-        StatusMessageQueue::clear();
     }
 
     function redcap_module_system_enable($version) {
