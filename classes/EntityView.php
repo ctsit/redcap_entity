@@ -21,6 +21,7 @@ class EntityView extends Page {
     protected $pageSize;
     protected $pagerSize;
     protected $currPage;
+    protected $header = [];
     protected $rows = [];
     protected $rowsAttributes = [];
     protected $totalRows = 0;
@@ -96,6 +97,7 @@ class EntityView extends Page {
     }
 
     protected function renderTable($bulk_enabled = false) {
+        $this->buildTableHeader($bulk_enabled);
         $this->buildTableRows($bulk_enabled);
 
         if (empty($this->rows)) {
@@ -104,7 +106,7 @@ class EntityView extends Page {
         }
 
         $this->loadTemplate('entity_list', [
-            'header' => $this->getTableHeader($bulk_enabled),
+            'header' => $this->header,
             'rows' => $this->rows,
             'rows_attributes' => $this->rowsAttributes,
         ]);
@@ -127,11 +129,11 @@ class EntityView extends Page {
             return;
         }
 
-        $form = RCView::hidden(['name' => '__operation']);
-        foreach ($operations as $operation => $info) {
+        $btns = '';
+        foreach ($operations as $key => $op) {
             $btn_class = 'primary';
 
-            if (!empty($info['color'])) {
+            if (!empty($op['color'])) {
                 $btn_classes = [
                     'green' => 'success',
                     'yellow' => 'warning',
@@ -142,20 +144,24 @@ class EntityView extends Page {
                     'light_blue' => 'info',
                 ];
 
-                if (isset($btn_classes[$info['color']])) {
-                    $btn_class = $btn_classes[$info['color']];
+                if (isset($btn_classes[$op['color']])) {
+                    $btn_class = $btn_classes[$op['color']];
                 }
             }
 
-            $form .= RCView::button([
-                'type' => 'submit',
-                'name' => REDCap::escapeHtml($operation),
+            $btns .= RCView::button([
+                'name' => REDCap::escapeHtml($key),
+                'data-toggle' => 'modal',
+                'data-target' => '#redcap-entity-bulk-operation-modal',
                 'class' => 'btn btn-' . $btn_class . ' bulk-operation',
-            ], REDCap::escapeHtml($info['label']));
+                'disabled' => true,
+            ], REDCap::escapeHtml($op['label']));
+
+            $this->loadTemplate('bulk_operation_modal', ['op' => $op, 'btn_class' => $btn_class]);
         }
 
         $this->jsFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/js/bulk_operations.js');
-        echo RCView::form(['method' => 'post', 'id' => 'redcap-entity-bulk'], $form);
+        echo RCView::div(['class' => 'redcap-entity-bulk-btns'], $btns);
     }
 
     protected function buildTableRows($bulk_operations = false) {
@@ -194,7 +200,7 @@ class EntityView extends Page {
 
         $row = [];
         if ($bulk_checkbox) {
-            $row['__bulk_op'] = RCView::checkbox(['name' => 'entities[]', 'value' => $entity->getId(), 'form' => 'redcap-entity-bulk']);
+            $row['__bulk_op'] = RCView::checkbox(['name' => 'entities[]', 'value' => $entity->getId(), 'form' => 'redcap-entity-bulk-form']);
         }
 
         foreach (array_keys($this->getTableHeaderLabels()) as $key) {
@@ -341,7 +347,7 @@ class EntityView extends Page {
         return $labels;
     }
 
-    protected function getTableHeader($bulk_operations = false) {
+    protected function buildTableHeader($bulk_operations = false) {
         $args = [];
         $url = parse_url($_SERVER['REQUEST_URI']);
         $curr_key = '';
@@ -360,7 +366,7 @@ class EntityView extends Page {
 
         $header = $this->getTableHeaderLabels();
         if ($bulk_operations) {
-            $header = ['__bulk_op' => RCView::checkbox(['name' => 'all_entities', 'form' => 'redcap-entity-bulk'])] + $header;
+            $header = ['__bulk_op' => RCView::checkbox(['name' => 'all_entities', 'form' => 'redcap-entity-bulk-form'])] + $header;
         }
 
         foreach ($this->getSortableColumns() as $key) {
@@ -381,7 +387,7 @@ class EntityView extends Page {
             $header[$key] = RCView::a(['href' => $url['path'] . '?' . http_build_query($args)], $header[$key]);
         }
 
-        return $header;
+        $this->header = $header;
     }
 
     protected function getSortableColumns() {
