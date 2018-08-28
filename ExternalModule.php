@@ -29,8 +29,4 @@ class ExternalModule extends AbstractExternalModule {
         define('REDCAP_ENTITY_FORM_JS_URL', $this->getUrl('manager/js/entity_form.js'));
         define('REDCAP_ENTITY_REFERENCE_URL', $this->getUrl('manager/ajax/entity_reference.php'));
     }
-
-    function redcap_module_system_enable($version) {
-        EntityDB::buildLogDBTable();
-    }
 }

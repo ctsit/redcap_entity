@@ -416,7 +416,7 @@ class EntityView extends Page {
     }
 
     protected function getEmptyResultsMessage() {
-        $label = isset($this->entityTypeInfo['label_plural']) ? strtolower($this->entityTypeInfo['label_plural']) : 'results';
+        $label = isset($this->entityTypeInfo['label_plural']) ? $this->entityTypeInfo['label_plural'] : 'results';
         return 'There are no ' . $label . '.';
     }
 

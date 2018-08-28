@@ -31,29 +31,6 @@ class EntityDB {
         }
     }
 
-    static function buildLogDBTable($reset = false) {
-        if ($reset) {
-            db_query('DROP TABLE IF EXISTS `redcap_entity_log`');
-        }
-
-        $sql = '
-            CREATE TABLE IF NOT EXISTS `redcap_entity_log` (
-                id INT UNSIGNED AUTO_INCREMENT,
-                entity_id INT UNSIGNED NOT NULL,
-                entity_type VARCHAR(255) NOT NULL,
-                event_type VARCHAR(255) NOT NULL,
-                user_id VARCHAR(255) NOT NULL,
-                time INT UNSIGNED NOT NULL,
-                data TEXT NOT NULL,
-                message TEXT,
-                PRIMARY KEY (id)
-            ) COLLATE utf8_unicode_ci';
-
-        if (!db_query($sql)) {
-            return false;
-        }
-    }
-
     protected static function buildEntityDBTable($entity_type, EntityFactory $factory, $reset = false) {
         if (!$info = $factory->getEntityTypeInfo($entity_type)) {
             return false;
@@ -81,6 +58,7 @@ class EntityDB {
                 case 'project':
                     $info['unsigned'] = true;
 
+                case 'date':
                 case 'integer':
                     $row .= 'INT';
                     if (!empty($info['unsigned'])) {

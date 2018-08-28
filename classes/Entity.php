@@ -291,36 +291,7 @@ class Entity {
 
         $this->updated = $data['updated'];
 
-        if (in_array($event_type, $this->loggableEvents())) {
-            $this->logEvent($event_type, $data, $message);
-        }
-
         return $this->id;
-    }
-
-    protected function logEvent($event_type, $data, $message = '') {
-        $data = array(
-            'entity_id' => $data['id'],
-            'entity_type' => $this->__entityTypeKey,
-            'event_type' => $event_type,
-            'user_id' => USERID,
-            'time' => $data['updated'],
-            'data' => json_encode($this->_removeBasicProperties($data)),
-            'message' => $message,
-        );
-
-        $keys = implode(', ', array_keys($data));
-        $values = implode(', ', $this->_formatQueryValues($data));
-
-        if (!db_query('INSERT INTO `redcap_entity_log` (' . $keys . ') VALUES ("' . $values . '")')) {
-            return false;
-        }
-
-        return true;
-    }
-
-    protected function loggableEvents() {
-        return [];
     }
 
     protected function _removeBasicProperties($data) {
