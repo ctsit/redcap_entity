@@ -26,6 +26,7 @@ class EntityView extends Page {
     protected $rowsAttributes = [];
     protected $totalRows = 0;
     protected $context;
+    protected $bulkOperationsEnabled = false;
 
     function __construct($entity_type, $module, $page_size = 25, $pager_size = 10) {
         $this->entityFactory = new EntityFactory();
@@ -53,16 +54,14 @@ class EntityView extends Page {
     }
 
     protected function renderPageBody() {
-        if (($bulk_enabled = !empty($this->getBulkOperations())) && $_SERVER['REQUEST_METHOD'] == 'POST' && !empty($_POST['__operation'])) {
-            $this->bulkOperationSubmit();
-        }
+        $this->processBulkOperations();
 
         StatusMessageQueue::clear();
 
         $this->loadStyles();
         $this->renderAddButton();
         $this->renderExposedFilters();
-        $this->renderTable($bulk_enabled);
+        $this->renderTable();
         $this->renderPager();
         $this->renderBulkOperations();
     }
@@ -92,13 +91,9 @@ class EntityView extends Page {
         // TODO.
     }
 
-    protected function getBulkOperations() {
-        return empty($this->entityTypeInfo['bulk_operations']) ? [] : $this->entityTypeInfo['bulk_operations'];
-    }
-
-    protected function renderTable($bulk_enabled = false) {
-        $this->buildTableHeader($bulk_enabled);
-        $this->buildTableRows($bulk_enabled);
+    protected function renderTable() {
+        $this->buildTableHeader();
+        $this->buildTableRows();
 
         if (empty($this->rows)) {
             echo RCView::div([], $this->getEmptyResultsMessage());
@@ -164,7 +159,7 @@ class EntityView extends Page {
         echo RCView::div(['class' => 'redcap-entity-bulk-btns'], $btns);
     }
 
-    protected function buildTableRows($bulk_operations = false) {
+    protected function buildTableRows() {
         $query = $this->getQuery();
 
         if ($this->pageSize) {
@@ -186,11 +181,11 @@ class EntityView extends Page {
         }
 
         foreach ($entities as $id => $entity) {
-            $this->rows[$id] = $this->buildTableRow($entity, $bulk_operations);
+            $this->rows[$id] = $this->buildTableRow($entity);
         }
     }
 
-    protected function buildTableRow($entity, $bulk_checkbox = false) {
+    protected function buildTableRow($entity) {
         $data = array_map('REDCap::escapeHtml', $entity->getData());
         $properties = $this->entityTypeInfo['properties'] += [
             'id' => ['name' => '#', 'type' => 'integer'],
@@ -199,11 +194,13 @@ class EntityView extends Page {
         ];
 
         $row = [];
-        if ($bulk_checkbox) {
-            $row['__bulk_op'] = RCView::checkbox(['name' => 'entities[]', 'value' => $entity->getId(), 'form' => 'redcap-entity-bulk-form']);
-        }
 
-        foreach (array_keys($this->getTableHeaderLabels()) as $key) {
+        foreach (array_keys($this->header) as $key) {
+            if ($key == '__bulk_op') {
+                $row['__bulk_op'] = RCView::checkbox(['name' => 'entities[]', 'value' => $entity->getId(), 'form' => 'redcap-entity-bulk-form']);
+                continue;
+            }
+
             if (in_array($key, ['__update', '__delete'])) {
                 $args = [
                     'entity_id' => $entity->getId(),
@@ -347,7 +344,7 @@ class EntityView extends Page {
         return $labels;
     }
 
-    protected function buildTableHeader($bulk_operations = false) {
+    protected function buildTableHeader() {
         $args = [];
         $url = parse_url($_SERVER['REQUEST_URI']);
         $curr_key = '';
@@ -365,7 +362,7 @@ class EntityView extends Page {
         }
 
         $header = $this->getTableHeaderLabels();
-        if ($bulk_operations) {
+        if ($this->bulkOperationsEnabled) {
             $header = ['__bulk_op' => RCView::checkbox(['name' => 'all_entities', 'form' => 'redcap-entity-bulk-form'])] + $header;
         }
 
@@ -424,27 +421,44 @@ class EntityView extends Page {
         return isset($this->entityTypeInfo['operations']) ? $this->entityTypeInfo['operations'] : [];
     }
 
-    protected function bulkOperationSubmit() {
-        $operations = $this->getBulkOperations();
-        $op = $_POST['__operation'];
+    protected function getBulkOperations() {
+        return empty($this->entityTypeInfo['bulk_operations']) ? [] : $this->entityTypeInfo['bulk_operations'];
+    }
 
-        if (!isset($operations[$op]) || empty($_POST['entities'])) {
+    protected function processBulkOperations() {
+        if (!$operations = $this->getBulkOperations()) {
             return;
         }
 
-        $op = $operations[$op];
+        $this->bulkOperationsEnabled = true;
+
+        if ($_SERVER['REQUEST_METHOD'] != 'POST' || empty($_POST['__operation']) || empty($_POST['entities'])) {
+            return;
+        }
+
+        $op = $_POST['__operation'];
+
+        if (!isset($operations[$op]) || empty($operations[$op]['method'])) {
+            return;
+        }
+
         if (!$entities = $this->entityFactory->loadInstances($this->entityTypeKey, $_POST['entities'])) {
             return;
         }
 
+        $this->executeBulkOperation($op, $operations[$op], $entities);
+    }
+
+    protected function executeBulkOperation($op, $op_info, $entities) {
         foreach ($entities as $entity) {
             // TODO: check if method exists.
-            $entity->{$op['method']}();
+            $entity->{$op_info['method']}();
         }
 
-        if (!empty($op['success_message'])) {
-            StatusMessageQueue::enqueue($op['success_message']);
-            StatusMessageQueue::clear();
+        // TODO: detect errors.
+
+        if (!empty($op_info['success_message'])) {
+            StatusMessageQueue::enqueue($op_info['success_message']);
         }
     }
 
