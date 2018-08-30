@@ -1,4 +1,5 @@
 $(function() {
+    $('#redcap-entity-exp-filters-form select').select2();
     var $buttons = $('button.bulk-operation');
 
     $buttons.click(function() {

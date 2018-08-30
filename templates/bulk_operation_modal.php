@@ -10,7 +10,7 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <p><?php echo isset($op['confirmation_message']) ? REDCap::escapeHtml($op['confirmation_message']) : 'This action cannot be undone.'; ?></p>
+                    <p><?php echo isset($op['messages']['confirmation']) ? REDCap::escapeHtml($op['messages']['confirmation']) : 'This action cannot be undone.'; ?></p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>

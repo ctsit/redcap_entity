@@ -12,7 +12,7 @@ use REDCapEntity\Page;
 use REDCapEntity\StatusMessageQueue;
 use User;
 
-class EntityView extends Page {
+class EntityList extends Page {
 
     protected $entityFactory;
     protected $entityTypeKey;
@@ -58,7 +58,6 @@ class EntityView extends Page {
 
         StatusMessageQueue::clear();
 
-        $this->loadStyles();
         $this->renderAddButton();
         $this->renderExposedFilters();
         $this->renderTable();
@@ -68,7 +67,7 @@ class EntityView extends Page {
 
     protected function renderAddButton() {
         $operations = $this->getOperations();
-        if (empty($operations['create'])) {
+        if (!in_array('create', $operations)) {
             return;
         }
 
@@ -87,8 +86,67 @@ class EntityView extends Page {
         ], $title);
     }
 
+    protected function getExposedFilters() {
+        $filters = [];
+        foreach (array_keys($this->getTableHeaderLabels()) as $key) {
+            if (isset($this->entityTypeInfo['properties'][$key])) {
+                $filters[$key] = $this->entityTypeInfo['properties'][$key];
+            }
+        }
+
+        return $filters;
+    }
+
     protected function renderExposedFilters() {
-        // TODO.
+        $filters = '';
+
+        foreach (['prefix', 'page', 'pager', 'pid'] as $key) {
+            if (isset($_GET[$key])) {
+               $filters .= RCView::hidden(['name' => $key, 'value' => REDCap::escapeHtml($_GET[$key])]);
+            }
+        }
+
+        foreach ($this->getExposedFilters() as $key => $info) {
+            $label = REDCap::escapeHtml($info['name']);
+            $value = isset($_GET[$key]) ? $_GET[$key] : '';
+
+            $attrs = ['name' => $key, 'id' => 'redcap-entity-filter-' . $key, 'class' => 'form-control form-control-sm'];
+            $label_attrs = ['for' => $attrs['id'], 'class' => 'sr-only'];
+
+            if ($info['type'] == 'boolean') {
+                if (!empty($value)) {
+                    $attrs['checked'] = true;
+                }
+
+                $element = RCView::checkbox(['class' => 'form-check-input'] + $attrs);
+                $element .= RCView::label(['class' => 'form-check-label'] + $label_attrs, $label);
+
+                $filters .= RCView::div(['class' => 'form-check', 'style' => 'margin-right: 10px;'], $element);
+                continue;
+            }
+
+            $choices = false;
+            if (!empty($info['choices'])) {
+                $choices = $info['choices'];
+            }
+            elseif (!empty($info['choices_callback'])) {
+                $entity = $this->entityFactory->getInstance($this->entityTypeKey);
+                $choices = $entity->{$info['choices_callback']}();
+            }
+
+            if ($choices) {
+                $element = RCView::select($attrs, ['' => '-- ' . $label . ' --'] + $choices, $value);
+            }
+            else {
+                $element = RCView::text($attrs + ['value' => $value, 'placeholder' => $label]);
+            }
+
+            $element = RCView::label($label_attrs, $label) . $element;
+            $filters .= RCView::div(['class' => 'form-group', 'style' => 'margin-right: 10px;'], $element);
+        }
+
+        $filters .= RCView::button(['type' => 'submit', 'class' => 'btn btn-sm btn-primary'], 'Submit');
+        echo RCView::form(['id' => 'redcap-entity-exp-filters-form', 'class' => 'form-inline', 'style' => 'margin-bottom: 25px;'], $filters);
     }
 
     protected function renderTable() {
@@ -155,7 +213,6 @@ class EntityView extends Page {
             $this->loadTemplate('bulk_operation_modal', ['op' => $op, 'btn_class' => $btn_class]);
         }
 
-        $this->jsFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/js/bulk_operations.js');
         echo RCView::div(['class' => 'redcap-entity-bulk-btns'], $btns);
     }
 
@@ -312,10 +369,6 @@ class EntityView extends Page {
         return [];
     }
 
-    protected function getFilters() {
-        return [];
-    }
-
     protected function getTableHeaderLabels() {
         $labels = ['id' => '#'];
 
@@ -332,7 +385,7 @@ class EntityView extends Page {
 
         $operations = $this->getOperations();
         foreach (['update', 'delete'] as $op) {
-            if (!empty($operations[$op])) {
+            if (in_array($op, $operations)) {
                 $labels['__' . $op] = '';
             }
         }
@@ -399,9 +452,14 @@ class EntityView extends Page {
     protected function getQuery() {
         $query = $this->entityFactory->query($this->entityTypeKey);
 
-        foreach ($this->getFilters() as $filter) {
+        foreach ($this->getExposedFilters() as $filter => $info) {
             if (isset($_GET[$filter]) && $_GET[$filter] !== '') {
-                $query->condition($filter, $_GET[$filter]);
+                if ($info['type'] = 'text' && empty($info['choices']) && empty($info['choices_callback'])) {
+                    $query->condition($filter, '%' .$_GET[$filter] . '%', 'like');
+                }
+                else {
+                    $query->condition($filter, $_GET[$filter]);
+                }
             }
         }
 
@@ -418,11 +476,11 @@ class EntityView extends Page {
     }
 
     protected function getOperations() {
-        return isset($this->entityTypeInfo['operations']) ? $this->entityTypeInfo['operations'] : [];
+        return $this->entityTypeInfo['operations'];
     }
 
     protected function getBulkOperations() {
-        return empty($this->entityTypeInfo['bulk_operations']) ? [] : $this->entityTypeInfo['bulk_operations'];
+        return $this->entityTypeInfo['bulk_operations'];
     }
 
     protected function processBulkOperations() {
@@ -457,13 +515,23 @@ class EntityView extends Page {
 
         // TODO: detect errors.
 
-        if (!empty($op_info['success_message'])) {
-            StatusMessageQueue::enqueue($op_info['success_message']);
+        if (!empty($op_info['messages']['success'])) {
+            StatusMessageQueue::enqueue($op_info['messages']['success']);
         }
     }
 
-    function loadStyles() {
+    protected function loadPageScripts() {
+        $this->jsFiles[] = APP_URL_EXTMOD . 'manager/js/select2.js';
+        $this->jsFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/js/entity_list.js');
+
+        parent::loadPageScripts();
+    }
+
+    protected function loadPageStyles() {
+        $this->cssFiles[] = APP_URL_EXTMOD . 'manager/css/select2.css';
         echo '<style>#pagecontainer { max-width: 1500px; }</style>';
+
+        parent::loadPageStyles();
     }
 
     protected function loadTemplate($template, $vars = []) {
