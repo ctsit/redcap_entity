@@ -31,6 +31,6 @@
     ],
     "enable-every-page-hooks-on-system-pages": true,
     "compatibility": {
-        "redcap-version-min": "8.4.3"
+        "redcap-version-min": "8.7.0"
     }
 }

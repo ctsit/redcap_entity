@@ -1,0 +1,13 @@
+#pagecontainer {
+    max-width: 1500px;
+}
+
+#redcap-entity-exp-filters-form {
+    margin-bottom: 15px;
+}
+
+#redcap-entity-exp-filters-form .form-group,
+#redcap-entity-exp-filters-form .form-check,
+#redcap-entity-exp-filters-form button {
+    margin: 0 10px 10px 0;
+}

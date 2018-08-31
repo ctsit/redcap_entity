@@ -24,10 +24,10 @@ class EntityQuery {
     }
 
     function condition($property, $value, $op = '=') {
-        $cond = '`' . db_real_escape_string($property) .  '` ';
+        $cond = '`' . db_escape($property) .  '` ';
 
         if (is_array($value)) {
-            $cond .= 'IN ("' . implode('", "', array_map('db_real_escape_string', $value)) . '")';
+            $cond .= 'IN ("' . implode('", "', array_map('db_escape', $value)) . '")';
         }
         elseif ($value === null) {
             $cond = 'IS NULL';
@@ -42,7 +42,7 @@ class EntityQuery {
                 $value = $value ? '"1"' : '"0"';
             }
             else {
-                $value = '"' . db_real_escape_string($value) . '"';
+                $value = '"' . db_escape($value) . '"';
             }
 
             $cond .= $op . ' ' . $value;
@@ -75,7 +75,7 @@ class EntityQuery {
 
     function execute($load_objects = true, $require_all_conds = true) {
         $glue = $require_all_conds ? ' AND ' : ' OR ';
-        $entity_type = db_real_escape_string($this->entityType);
+        $entity_type = db_escape($this->entityType);
         $select = $this->countQuery ? 'COUNT(id) count' : 'id';
 
         $sql = 'SELECT ' . $select . ' FROM `redcap_entity_' . $entity_type . '`';
@@ -84,7 +84,7 @@ class EntityQuery {
         }
 
         if (!$this->countQuery) {
-            $sql .= ' ORDER BY `' . db_real_escape_string($this->orderBy) . '`';
+            $sql .= ' ORDER BY `' . db_escape($this->orderBy) . '`';
             if ($this->desc) {
                 $sql .= ' DESC';
             }

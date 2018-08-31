@@ -100,7 +100,7 @@ class EntityList extends Page {
     protected function renderExposedFilters() {
         $filters = '';
 
-        foreach (['prefix', 'page', 'pager', 'pid'] as $key) {
+        foreach (['prefix', 'page', 'pid'] as $key) {
             if (isset($_GET[$key])) {
                $filters .= RCView::hidden(['name' => $key, 'value' => REDCap::escapeHtml($_GET[$key])]);
             }
@@ -110,7 +110,12 @@ class EntityList extends Page {
             $label = REDCap::escapeHtml($info['name']);
             $value = isset($_GET[$key]) ? $_GET[$key] : '';
 
-            $attrs = ['name' => $key, 'id' => 'redcap-entity-filter-' . $key, 'class' => 'form-control form-control-sm'];
+            $attrs = [
+                'name' => $key,
+                'id' => 'redcap-entity-filter-' . $key,
+                'class' => 'form-control form-control-sm',
+            ];
+
             $label_attrs = ['for' => $attrs['id'], 'class' => 'sr-only'];
 
             if ($info['type'] == 'boolean') {
@@ -121,7 +126,7 @@ class EntityList extends Page {
                 $element = RCView::checkbox(['class' => 'form-check-input'] + $attrs);
                 $element .= RCView::label(['class' => 'form-check-label'] + $label_attrs, $label);
 
-                $filters .= RCView::div(['class' => 'form-check', 'style' => 'margin-right: 10px;'], $element);
+                $filters .= RCView::div(['class' => 'form-check'], $element);
                 continue;
             }
 
@@ -133,6 +138,14 @@ class EntityList extends Page {
                 $entity = $this->entityFactory->getInstance($this->entityTypeKey);
                 $choices = $entity->{$info['choices_callback']}();
             }
+            elseif ($info['type'] == 'entity_reference' && !empty($info['entity_type'])) {
+                $choices = [];
+
+                $entities = $this->entityFactory->query($info['entity_type'])->execute();
+                foreach ($entities as $id => $entity) {
+                    $choices[$id] = $entity->getLabel();
+                }
+            }
 
             if ($choices) {
                 $element = RCView::select($attrs, ['' => '-- ' . $label . ' --'] + $choices, $value);
@@ -142,11 +155,11 @@ class EntityList extends Page {
             }
 
             $element = RCView::label($label_attrs, $label) . $element;
-            $filters .= RCView::div(['class' => 'form-group', 'style' => 'margin-right: 10px;'], $element);
+            $filters .= RCView::div(['class' => 'form-group'], $element);
         }
 
         $filters .= RCView::button(['type' => 'submit', 'class' => 'btn btn-sm btn-primary'], 'Submit');
-        echo RCView::form(['id' => 'redcap-entity-exp-filters-form', 'class' => 'form-inline', 'style' => 'margin-bottom: 25px;'], $filters);
+        echo RCView::form(['id' => 'redcap-entity-exp-filters-form', 'class' => 'form-inline'], $filters);
     }
 
     protected function renderTable() {
@@ -529,7 +542,7 @@ class EntityList extends Page {
 
     protected function loadPageStyles() {
         $this->cssFiles[] = APP_URL_EXTMOD . 'manager/css/select2.css';
-        echo '<style>#pagecontainer { max-width: 1500px; }</style>';
+        $this->cssFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/css/entity_list.css');
 
         parent::loadPageStyles();
     }

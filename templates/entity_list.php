@@ -1,4 +1,4 @@
-<div id="redcap-entity-view" class="table-responsive">
+<div id="redcap-entity-list" class="table-responsive">
     <div class="table-responsive">
         <table class="table table-striped">
             <thead>
