@@ -11,3 +11,7 @@
 #redcap-entity-exp-filters-form button {
     margin: 0 10px 10px 0;
 }
+
+.redcap-entity-add-btn {
+    margin: 15px 0;
+}

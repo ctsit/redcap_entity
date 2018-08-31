@@ -16,12 +16,14 @@ class EntityForm extends Page {
     protected $entityTypeInfo;
     protected $type;
     protected $errors = [];
+    protected $formUrl;
 
     function __construct(Entity $entity) {
         $this->entity = $entity;
         $this->entityFactory = $entity->getFactory();
         $this->entityTypeInfo = $entity->getEntityTypeInfo();
         $this->type = $entity->getId() ? 'update' : 'create';
+        $this->formUrl = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/entity.php');
     }
 
     protected function buildFieldsInfo() {
@@ -49,22 +51,10 @@ class EntityForm extends Page {
         }
 
         $this->cssFiles[] = ExternalModules::$BASE_URL . 'manager/css/select2.css';
+        $this->cssFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/css/entity_form.css');
 
         $this->jsFiles[] = ExternalModules::$BASE_URL . 'manager/js/select2.js';
-        $this->jsFiles[] = REDCAP_ENTITY_FORM_JS_URL;
-
-        $this->jsSettings['redcapEntity'] = [
-            'dateFields' => [],
-            'userFields' => [],
-            'projectReference' => [
-                'url' => ExternalModules::$BASE_URL . 'manager/ajax/get-project-list.php',
-                'fields' => [],
-            ],
-            'entityReference' => [
-                'url' => REDCAP_ENTITY_REFERENCE_URL,
-                'fields' => [],
-            ],
-        ];
+        $this->jsFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/js/entity_fields.js');
 
         parent::render($context, $title, $icon);
     }
@@ -94,7 +84,7 @@ class EntityForm extends Page {
         echo RCView::form(['id' => 'entity-form', 'method' => 'post'], $output);
     }
 
-    protected function buildFormElements($entity, $entity_type_info, $data, $prefix = '') {
+    protected function buildFormElements($entity, $entity_type_info, $data) {
         $rows = '';
 
         foreach ($entity_type_info['properties'] as $key => $info) {
@@ -102,30 +92,6 @@ class EntityForm extends Page {
 
             if ($info['type'] == 'entity_reference' && !empty($info['entity_type'])) {
                 if (!$entity_type_info = $this->entityFactory->getEntityTypeInfo($info['entity_type'])) {
-                    continue;
-                }
-
-                if (!empty($info['multiple'])) {
-                    if (empty($info['entity_foreign_key'])) {
-                        continue;
-                    }
-
-                    $sub_prefix = $prefix;
-                    $sub_prefix .= empty($sub_prefix) ? $key : '[' . $key . '][]';
-
-                    $row = RCView::legend(['class' => 'form-label'], $label);
-
-                    if (empty($data[$key])) {
-                        $row .= $this->buildFormElements($entity_type_info['properties'], [], $entity_type_info, $sub_prefix);
-                    }
-                    else {
-                        foreach ($data[$key] as $sub_row) {
-                            $row .= $this->buildFormElements($entity_type_info['properties'], $sub_row, $entity_type_info, $sub_prefix);
-                        }
-                    }
-
-                    $output .= RCView::fieldset(['class' => 'form-group'], $row);
-
                     continue;
                 }
             }
@@ -136,10 +102,7 @@ class EntityForm extends Page {
                 continue;
             }
 
-            $row = RCView::label(['class' => 'form-label'], $label);
-            $name = empty($prefix) ? $key : $prefix . '[' . $key . ']';
-
-            $attrs = ['name' => $name, 'class' => 'form-control'];
+            $attrs = ['name' => $key, 'class' => 'form-control', 'id' => 'redcap-entity-prop-' . $key];
 
             if (!empty($info['readonly'])) {
                 $attrs['readonly'] = '';
@@ -149,35 +112,54 @@ class EntityForm extends Page {
                 $attrs['disabled'] = '';
             }
 
+            if ($info['type'] == 'boolean') {
+                $attrs['value'] = '1';
+
+                if (!empty($data[$key])) {
+                    $attrs['checked'] = true;
+                }
+
+                $row = RCView::checkbox(['class' => 'form-check-input'] + $attrs);
+                $row .= RCView::label(['class' => 'form-check-label'], $label);
+
+                $rows .= RCView::div(['class' => 'form-check form-group'], $row);
+                continue;
+            }
+
+            $row = RCView::label(['class' => 'form-label', 'for' => $attrs['id']], $label);
+
+            if (!empty($info['choices'])) {
+                $choices = $info['choices'];
+                $attrs['class'] .= ' redcap-entity-select';
+            }
+            elseif (!empty($info['choices_callback']) && method_exists($this->entity, $info['choices_callback'])) {
+                $info['choices'] = $this->entity->{$info['choices_callback']}();
+                $attrs['class'] .= ' redcap-entity-select';
+            }
             if ($info['type'] == 'project') {
                 $info['choices'] = [];
+                $attrs['class'] .= ' redcap-entity-select-project';
 
                 if (!empty($data[$key]) && ($title = ToDoList::getProjectTitle($data[$key]))) {
                     $info['choices'][$data[$key]] = '(' . $data[$key] . ') ' . REDCap::escapeHtml($title);
                 }
-
-                $this->jsSettings['redcapEntity']['projectReference']['fields'][] = $name;
             }
             elseif ($info['type'] == 'user') {
                 $info['choices'] = [];
+                $attrs['class'] .= ' redcap-entity-select-user';
 
                 if (!empty($data[$key]) && ($user_info = User::getUserInfo($data[$key]))) {
                     $info['choices'][$data[$key]] = $data[$key] . ' (' . REDCap::escapeHtml($user_info['user_firstname'] . ' ' . $user_info['user_lastname'] . ') - ' . $user_info['user_email']);
                 }
-
-                $this->jsSettings['redcapEntity']['userFields'][] = $name;
             }
             elseif ($info['type'] == 'entity_reference' && !empty($info['entity_type'])) {
                 $info['choices'] = [];
+                $attrs['class'] .= ' redcap-entity-select-entity-reference';
+                $attrs['data-entity_type'] = $info['entity_type'];
 
                 if (!empty($data[$key]) && ($entity = $this->entityFactory->getInstance($info['entity_type'], $data[$key]))) {
                     $info['choices'][$data[$key]] = REDCap::escapeHtml($entity->getLabel());
                 }
-
-                $this->jsSettings['redcapEntity']['entityReference']['fields'][$name] = $info['entity_type'];
-            }
-            elseif (!empty($info['choices_callback']) && method_exists($this->entity, $info['choices_callback'])) {
-                $info['choices'] = $this->entity->{$info['choices_callback']}();
             }
 
             if (isset($info['choices']) && is_array($info['choices'])) {
@@ -260,13 +242,13 @@ class EntityForm extends Page {
             StatusMessageQueue::enqueue(RCView::ul([], $items), 'error');
         }
         else {
-            $label = empty($this->entityTypeInfo['name']) ? 'entity' : strtolower($this->entityTypeInfo['name']);
+            $label = empty($this->entityTypeInfo['label']) ? 'entity' : $this->entityTypeInfo['label'];
             if (!$this->save()) {
                 $msg = 'There was an error while saving the ' . $label . '.';
                 StatusMessageQueue::enqueue($msg, 'error');
             }
             else {
-                StatusMessageQueue::enqueue('The ' . $label . 'has been saved successfully.');
+                StatusMessageQueue::enqueue('The ' . $label . ' has been saved successfully.');
 
                 if (isset($_GET['__return_url'])) {
                     redirect($_GET['__return_url']);
@@ -278,7 +260,7 @@ class EntityForm extends Page {
                     'context' => $this->context,
                 ];
 
-                redirect(REDCAP_ENTITY_FORM_URL . '&' . http_build_query($args));
+                redirect($this->formUrl . '&' . http_build_query($args));
             }
         }
 
@@ -306,20 +288,12 @@ class EntityForm extends Page {
                         $filtered[$key] = strtotime($data[$key]);
                         break;
 
-                    case 'entity_reference':
-                        if (!empty($info['multiple'])) {
-                            $sub_entity_type_info = $this->entityFactory->getEntityTypeInfo($info['entity_type']);
-
-                            foreach ($data[$key] as $sub_data) {
-                                $sub_id = empty($sub_data['id']) ? null : $sub_data['id'];
-                                $sub_entity = $this->entityFactory->getInstance($info['entity_type'], $sub_id);
-
-                                $this->validate($sub_data, $sub_entity, $sub_entity_type_info);
-                            }
-                        }
-
+                    case 'boolean':
+                        $filtered[$key] = !empty($data[$key]);
                         break;
                 }
+
+                continue;
             }
 
             $label = empty($info['name']) ? $key : $info['name'];

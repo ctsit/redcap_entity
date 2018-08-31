@@ -27,6 +27,7 @@ class EntityList extends Page {
     protected $totalRows = 0;
     protected $context;
     protected $bulkOperationsEnabled = false;
+    protected $formUrl;
 
     function __construct($entity_type, $module, $page_size = 25, $pager_size = 10) {
         $this->entityFactory = new EntityFactory();
@@ -42,6 +43,8 @@ class EntityList extends Page {
         $this->pageSize = $page_size;
         $this->pagerSize = $pager_size;
         $this->currPage = empty($_GET['pager']) || $_GET['pager'] != intval($_GET['pager']) ? 1 : $_GET['pager'];
+
+        $this->formUrl = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/entity.php');
     }
 
     function render($context, $title = null, $icon = 'application_view_columns') {
@@ -77,12 +80,12 @@ class EntityList extends Page {
             '__return_url' => REDCap::escapeHtml($_SERVER['REQUEST_URI']),
         ];
 
-        $title = RCView::img(['src' => APP_PATH_IMAGES . 'add.png']) . ' ';
+        $title = RCView::i(['class' => 'fa fa-plus-circle']) . ' ';
         $title .= isset($this->entityTypeInfo['label']) ? $this->entityTypeInfo['label'] : 'Entity';
 
-        echo RCView::a([
-            'href' => REDCAP_ENTITY_FORM_URL . '&' . http_build_query($args),
-            'class' => 'btn btn-default',
+        echo RCView::button([
+            'class' => 'btn btn-success btn-sm redcap-entity-add-btn',
+            'onclick' => 'location.href = "' . $this->formUrl . '&' . http_build_query($args) . '";',
         ], $title);
     }
 
@@ -116,45 +119,53 @@ class EntityList extends Page {
                 'class' => 'form-control form-control-sm',
             ];
 
-            $label_attrs = ['for' => $attrs['id'], 'class' => 'sr-only'];
+            $choices = false;
 
             if ($info['type'] == 'boolean') {
-                if (!empty($value)) {
-                    $attrs['checked'] = true;
-                }
-
-                $element = RCView::checkbox(['class' => 'form-check-input'] + $attrs);
-                $element .= RCView::label(['class' => 'form-check-label'] + $label_attrs, $label);
-
-                $filters .= RCView::div(['class' => 'form-check'], $element);
-                continue;
+                $choices = ['0' => 'No', '1' => 'Yes'];
             }
-
-            $choices = false;
-            if (!empty($info['choices'])) {
+            elseif (!empty($info['choices'])) {
                 $choices = $info['choices'];
             }
             elseif (!empty($info['choices_callback'])) {
                 $entity = $this->entityFactory->getInstance($this->entityTypeKey);
                 $choices = $entity->{$info['choices_callback']}();
             }
+            elseif ($info['type'] == 'project') {
+                $choices = [];
+                $attrs['class'] .= ' redcap-entity-select-project';
+
+                if (!empty($value) && ($title = ToDoList::getProjectTitle($data[$key]))) {
+                    $choices[$value] = '(' . $value . ') ' . REDCap::escapeHtml($title);
+                }
+            }
+            elseif ($info['type'] == 'user') {
+                $choices = [];
+                $attrs['class'] .= ' redcap-entity-select-user';
+
+                if (!empty($value) && ($user_info = User::getUserInfo($value))) {
+                    $choices[$value] = $value . ' (' . REDCap::escapeHtml($user_info['user_firstname'] . ' ' . $user_info['user_lastname'] . ') - ' . $user_info['user_email']);
+                }
+            }
             elseif ($info['type'] == 'entity_reference' && !empty($info['entity_type'])) {
                 $choices = [];
 
-                $entities = $this->entityFactory->query($info['entity_type'])->execute();
-                foreach ($entities as $id => $entity) {
-                    $choices[$id] = $entity->getLabel();
+                $attrs['class'] .= ' redcap-entity-select-entity-reference';
+                $attrs['data-entity_type'] = $info['entity_type'];
+
+                if (!empty($value) && ($entity = $this->entityFactory->getInstance($info['entity_type'], $value))) {
+                    $choices[$value] = REDCap::escapeHtml($entity->getLabel());
                 }
             }
 
-            if ($choices) {
-                $element = RCView::select($attrs, ['' => '-- ' . $label . ' --'] + $choices, $value);
-            }
-            else {
+            if ($choices === false) {
                 $element = RCView::text($attrs + ['value' => $value, 'placeholder' => $label]);
             }
+            else {
+                $element = RCView::select($attrs, ['' => '-- ' . $label . ' --'] + $choices, $value);
+            }
 
-            $element = RCView::label($label_attrs, $label) . $element;
+            $element = RCView::label(['for' => $attrs['id'], 'class' => 'sr-only'], $label) . $element;
             $filters .= RCView::div(['class' => 'form-group'], $element);
         }
 
@@ -279,7 +290,7 @@ class EntityList extends Page {
                     '__return_url' => $_SERVER['REQUEST_URI'],
                 ];
 
-                $path = REDCAP_ENTITY_FORM_URL;
+                $path = $this->formUrl;
 
                 if ($key == '__update') {
                     $title = 'edit';
@@ -322,6 +333,10 @@ class EntityList extends Page {
             $row[$key] = $data[$key];
 
             switch ($info['type']) {
+                case 'boolean':
+                    $row[$key] = empty($row[$key]) ? 'No' : 'Yes';
+                    break;
+
                 case 'date':
                     $row[$key] = date('m/d/Y', $data[$key]);
                     break;
@@ -536,6 +551,7 @@ class EntityList extends Page {
     protected function loadPageScripts() {
         $this->jsFiles[] = APP_URL_EXTMOD . 'manager/js/select2.js';
         $this->jsFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/js/entity_list.js');
+        $this->jsFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/js/entity_fields.js');
 
         parent::loadPageScripts();
     }

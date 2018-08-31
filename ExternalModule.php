@@ -25,8 +25,14 @@ class ExternalModule extends AbstractExternalModule {
 
     function redcap_every_page_before_render($project_id) {
         define('REDCAP_ENTITY_PREFIX', $this->PREFIX);
-        define('REDCAP_ENTITY_FORM_URL', $this->getUrl('manager/entity.php'));
-        define('REDCAP_ENTITY_FORM_JS_URL', $this->getUrl('manager/js/entity_form.js'));
-        define('REDCAP_ENTITY_REFERENCE_URL', $this->getUrl('manager/ajax/entity_reference.php'));
+    }
+
+    function redcap_every_page_top($project_id) {
+        $settings = [
+            'projectReferenceUrl' => ExternalModules::$BASE_URL . 'manager/ajax/get-project-list.php',
+            'entityReferenceUrl' => $this->getUrl('manager/ajax/entity_reference.php'),
+        ];
+
+        echo '<script>redcapEntity = ' . json_encode($settings) . ';</script>';
     }
 }

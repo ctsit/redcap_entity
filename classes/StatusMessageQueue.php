@@ -35,7 +35,7 @@ class StatusMessageQueue {
 
             $style = $styles[$type];
             foreach ($msgs as $i => $msg) {
-                displayMsg(REDCap::escapeHtml($msg), 'redcap-entity-' . $type . '-' . $i, 'center', $style['color'], $style['icon'] . '.png', 0, false);
+                displayMsg($msg, 'redcap-entity-' . $type . '-' . $i, 'center', $style['color'], $style['icon'] . '.png', 0, false);
             }
         }
 

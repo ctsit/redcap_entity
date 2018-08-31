@@ -1,8 +1,22 @@
 $(function() {
-    $.each(redcapEntity.entityReference.fields, function (name, entityType) {
-        $('#entity-form select[name="' + name + '"]').select2({
+    $('select.redcap-entity-select').each(function() {
+        var label = $('label[for="' + $(this).prop('id') + '"]').text();
+
+        $(this).select2({
+            allowClear: true,
+            placeholder: '-- ' + label + ' --'
+        });
+    });
+
+    $('select.redcap-entity-select-entity-reference').each(function() {
+        var entityType = $(this).data('entity_type');
+        var label = $('label[for="' + $(this).prop('id') + '"]').text();
+
+        $(this).select2({
+            allowClear: true,
+            placeholder: '-- ' + label + ' --',
             ajax: {
-                url: redcapEntity.entityReference.url,
+                url: redcapEntity.entityReferenceUrl,
                 dataType: 'json',
                 cache: true,
                 delay: 250,
@@ -14,10 +28,14 @@ $(function() {
         });
     });
 
-    redcapEntity.projectReference.fields.forEach(function (name) {
-        $('#entity-form select[name="' + name + '"]').select2({
+    $('select.redcap-entity-select-project').each(function() {
+        var label = $('label[for="' + $(this).prop('id') + '"]').text();
+
+        $(this).select2({
+            placeholder: '-- ' + label + '--',
+            allowClear: true,
             ajax: {
-                url: redcapEntity.projectReference.url,
+                url: redcapEntity.projectReferenceUrl,
                 dataType: 'json',
                 cache: true,
                 delay: 250,
@@ -30,8 +48,12 @@ $(function() {
         });
     });
 
-    redcapEntity.userFields.forEach(function (name) {
-        $('#entity-form select[name="' + name + '"]').select2({
+    $('select.redcap-entity-select-user').each(function() {
+        var label = $('label[for="' + $(this).prop('id') + '"]').text();
+
+        $(this).select2({
+            placeholder: '-- ' + label + '--',
+            allowClear: true,
             ajax: {
                 url: app_path_webroot + 'UserRights/search_user.php',
                 dataType: 'json',
@@ -60,9 +82,7 @@ $(function() {
         });
     });
 
-    redcapEntity.dateFields.forEach(function (name) {
-        $('#entity-form input[name="' + name + '"]').datepicker({
-            dateFormat: user_date_format_jquery
-        });
+    $('input.redca-entity-field-date').datepicker({
+        dateFormat: user_date_format_jquery
     });
 });
