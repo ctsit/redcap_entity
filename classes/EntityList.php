@@ -4,6 +4,7 @@ namespace REDCapEntity;
 
 use Exception;
 use ExternalModules\ExternalModules;
+use Records;
 use RedCapDB;
 use RCView;
 use REDCap;
@@ -130,6 +131,10 @@ class EntityList extends Page {
             elseif (!empty($info['choices_callback'])) {
                 $entity = $this->entityFactory->getInstance($this->entityTypeKey);
                 $choices = $entity->{$info['choices_callback']}();
+            }
+            elseif ($info['type'] == 'record') {
+                $choices = Records::getRecordsAsArray(PROJECT_ID);
+                $attrs['class'] .= ' redcap-entity-select';
             }
             elseif ($info['type'] == 'project') {
                 $choices = [];
@@ -335,6 +340,16 @@ class EntityList extends Page {
             switch ($info['type']) {
                 case 'boolean':
                     $row[$key] = empty($row[$key]) ? 'No' : 'Yes';
+                    break;
+
+                case 'record':
+                    if (defined('PROJECT_ID')) {
+                        $row[$key] = RCView::a([
+                            'href' => APP_PATH_WEBROOT . 'DataEntry/record_home.php?pid=' . PROJECT_ID . '&id=' . $row[$key] . '&arm=' . getArm(),
+                            'target' => '_blank',
+                        ], $row[$key]);
+                    }
+
                     break;
 
                 case 'date':

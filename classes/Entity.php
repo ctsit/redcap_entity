@@ -8,6 +8,7 @@ namespace REDCapEntity;
 
 use REDCapEntity\EntityFactory;
 use Exception;
+use Records;
 use RedCapDB;
 use UserRights;
 
@@ -119,6 +120,9 @@ class Entity {
                 }
 
                 break;
+
+            case 'record':
+                return defined('PROJECT_ID') && Records::recordExists(PROJECT_ID, $value);
 
             case 'price':
                 return intval($value) == $value && $value >= 0;

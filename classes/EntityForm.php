@@ -132,11 +132,18 @@ class EntityForm extends Page {
                 $choices = $info['choices'];
                 $attrs['class'] .= ' redcap-entity-select';
             }
-            elseif (!empty($info['choices_callback']) && method_exists($this->entity, $info['choices_callback'])) {
-                $info['choices'] = $this->entity->{$info['choices_callback']}();
-                $attrs['class'] .= ' redcap-entity-select';
+            elseif (!empty($info['choices_callback'])) {
+                if (method_exists($this->entity, $info['choices_callback'])) {
+                    $info['choices'] = $this->entity->{$info['choices_callback']}();
+                    $attrs['class'] .= ' redcap-entity-select';
+                }
             }
-            if ($info['type'] == 'project') {
+            elseif ($info['type'] == 'record') {
+                if (defined('PROJECT_ID')) {
+                    $info['choices'] = Records::getRecordsAsArray(PROJECT_ID);
+                }
+            }
+            elseif ($info['type'] == 'project') {
                 $info['choices'] = [];
                 $attrs['class'] .= ' redcap-entity-select-project';
 
@@ -149,7 +156,8 @@ class EntityForm extends Page {
                 $attrs['class'] .= ' redcap-entity-select-user';
 
                 if (!empty($data[$key]) && ($user_info = User::getUserInfo($data[$key]))) {
-                    $info['choices'][$data[$key]] = $data[$key] . ' (' . REDCap::escapeHtml($user_info['user_firstname'] . ' ' . $user_info['user_lastname'] . ') - ' . $user_info['user_email']);
+                    $full_name = $user_info['user_firstname'] . ' ' . $user_info['user_lastname'];
+                    $info['choices'][$data[$key]] = $data[$key] . ' (' . REDCap::escapeHtml($full_name . ') - ' . $user_info['user_email']);
                 }
             }
             elseif ($info['type'] == 'entity_reference' && !empty($info['entity_type'])) {

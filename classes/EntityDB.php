@@ -45,11 +45,12 @@ class EntityDB {
 
         $rows = [];
         foreach ($schema as $field => $info) {
-            $row = '`' . db_real_escape_string($field) . '` ';
+            $row = '`' . db_escape($field) . '` ';
 
             switch (strtolower($info['type'])) {
                 case 'user':
                 case 'text':
+                case 'record':
                     $row .= 'VARCHAR(255)';
                     break;
 

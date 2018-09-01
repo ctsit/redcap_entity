@@ -18,6 +18,7 @@ use REDCapEntity\EntityQuery;
  */
 class EntityFactory {
     static protected $entityTypes;
+    static protected $modules;
 
     function __construct($reset = false) {
         if ($reset || !isset(self::$entityTypes)) {
@@ -55,6 +56,10 @@ class EntityFactory {
             }
 
             $types[] = $type;
+        }
+
+        if (!empty($types)) {
+            self::$modules[$module->PREFIX] = $module->VERSION;
         }
 
         return $types;
@@ -128,8 +133,13 @@ class EntityFactory {
         return $keys_only ? array_keys(self::$entityTypes) : self::$entityTypes;
     }
 
+    function getModules() {
+        return self::$modules;
+    }
+
     protected function reset() {
         self::$entityTypes = [];
+        self::$modules = [];
 
         foreach (ExternalModules::getEnabledModules() as $prefix => $version) {
             $module = ExternalModules::getModuleInstance($prefix, $version);
