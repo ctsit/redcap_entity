@@ -1,0 +1,35 @@
+{
+    "name": "REDCap Entity API",
+    "namespace": "REDCapEntity\\ExternalModule",
+    "description": "Provides an API to design, store and manage entities in REDCap. <strong><a href=\"https://github.com/ctsit/redcap_entity\">See full documentation here</a></strong>.",
+    "permissions": [
+        "redcap_every_page_before_render",
+        "redcap_every_page_top"
+    ],
+    "authors": [
+        {
+            "name": "Tiago Bember",
+            "email": "tbembersimeao@ufl.edu",
+            "institution": "University of Florida - CTSI"
+        },
+        {
+            "name": "Philip Chase",
+            "email": "pbc@ufl.edu",
+            "institution": "University of Florida - CTSI"
+        },
+        {
+            "name": "Taryn Stoffs",
+            "email": "tls@ufl.edu",
+            "institution": "University of Florida - CTSI"
+        },
+        {
+            "name": "Marly Cormar",
+            "email": "marlycormar@ufl.edu",
+            "institution": "University of Florida - CTSI"
+        }
+    ],
+    "enable-every-page-hooks-on-system-pages": true,
+    "compatibility": {
+        "redcap-version-min": "8.7.0"
+    }
+}
