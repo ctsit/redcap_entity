@@ -2,6 +2,7 @@
 
 namespace REDCapEntity;
 
+use HtmlPage;
 use REDCap;
 use RCView;
 
@@ -35,7 +36,16 @@ abstract class Page {
                 break;
 
             case 'global':
-                // TODO
+                $objHtmlPage = new HtmlPage();
+                $objHtmlPage->addExternalJS(APP_PATH_JS . 'base.js');
+                $objHtmlPage->addStylesheet('jquery-ui.min.css', 'screen,print');
+                $objHtmlPage->addStylesheet('style.css', 'screen,print');
+                $objHtmlPage->addStylesheet('home.css', 'screen,print');
+                $objHtmlPage->PrintHeader();
+
+                $title =  RCView::div(['class' => 'projhdr'], $title);
+                $header_path =  'Views' . DS . 'HomeTabs.php';
+
                 break;
 
             default:
@@ -51,7 +61,12 @@ abstract class Page {
         $this->loadPageScripts();
         $this->loadPageStyles();
 
-        include_once APP_PATH_DOCROOT . $footer_path;
+        if ($context == 'global') {
+            $objHtmlPage->PrintFooter();
+        }
+        else {
+            include_once APP_PATH_DOCROOT . $footer_path;
+        }
     }
 
     protected function getValidContexts() {

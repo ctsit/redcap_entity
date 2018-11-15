@@ -106,6 +106,13 @@ class Entity {
         }
 
         switch ($info['type']) {
+            case 'email':
+                if (filter_var($value, FILTER_VALIDATE_EMAIL) === false) {
+                    return false;
+                }
+
+                break;
+
             case 'text':
                 if (!is_string($value)) {
                     return false;

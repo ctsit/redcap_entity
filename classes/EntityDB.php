@@ -49,6 +49,7 @@ class EntityDB {
 
             switch (strtolower($info['type'])) {
                 case 'user':
+                case 'email':
                 case 'text':
                 case 'record':
                     $row .= 'VARCHAR(255)';

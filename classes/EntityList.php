@@ -11,6 +11,7 @@ use REDCap;
 use REDCapEntity\EntityFactory;
 use REDCapEntity\Page;
 use REDCapEntity\StatusMessageQueue;
+use ToDoList;
 use User;
 
 class EntityList extends Page {
@@ -48,9 +49,13 @@ class EntityList extends Page {
         $this->formUrl = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/entity.php');
     }
 
-    function render($context, $title = null, $icon = 'application_view_columns') {
+    function render($context, $title = null, $icon = null) {
         if (!$title) {
             $title = isset($this->entityTypeInfo['label_plural']) ? $this->entityTypeInfo['label_plural'] : 'Entities';
+        }
+
+        if (!$icon) {
+            $icon = isset($this->entityTypeInfo['icon']) ? $this->entityTypeInfo['icon'] : 'application_view_columns';
         }
 
         $this->context = $context;
@@ -90,11 +95,23 @@ class EntityList extends Page {
         ], $title);
     }
 
+    protected function getFields() {
+        return $this->entityTypeInfo['properties'] + [
+            'id' => ['name' => '#', 'type' => 'integer'],
+            'created' => ['name' => 'Created', 'type' => 'date'],
+            'updated' => ['name' => 'Updated', 'type' => 'date'],
+        ];
+    }
+
     protected function getExposedFilters() {
         $filters = [];
+        $fields = $this->getFields();
+
+        unset($fields['id'], $fields['created'], $fields['updated']);
+
         foreach (array_keys($this->getTableHeaderLabels()) as $key) {
-            if (isset($this->entityTypeInfo['properties'][$key])) {
-                $filters[$key] = $this->entityTypeInfo['properties'][$key];
+            if (isset($fields[$key])) {
+                $filters[$key] = $fields[$key];
             }
         }
 
@@ -102,17 +119,25 @@ class EntityList extends Page {
     }
 
     protected function renderExposedFilters() {
-        $filters = '';
+        if (!$filters = $this->getExposedFilters()) {
+            return;
+        }
+
+        $output = '';
 
         foreach (['prefix', 'page', 'pid'] as $key) {
             if (isset($_GET[$key])) {
-               $filters .= RCView::hidden(['name' => $key, 'value' => REDCap::escapeHtml($_GET[$key])]);
+               $output .= RCView::hidden(['name' => $key, 'value' => REDCap::escapeHtml($_GET[$key])]);
             }
         }
 
-        foreach ($this->getExposedFilters() as $key => $info) {
+        if (PAGE == 'api/index.php' && isset($_GET['prefix']) && isset($_GET['page'])) {
+            $output .= RCView::hidden(['name' => 'type', 'value' => 'module']);
+        }
+
+        foreach ($filters as $key => $info) {
             $label = REDCap::escapeHtml($info['name']);
-            $value = isset($_GET[$key]) ? $_GET[$key] : '';
+            $value = isset($_GET[$key]) ? trim($_GET[$key]) : '';
 
             $attrs = [
                 'name' => $key,
@@ -140,7 +165,7 @@ class EntityList extends Page {
                 $choices = [];
                 $attrs['class'] .= ' redcap-entity-select-project';
 
-                if (!empty($value) && ($title = ToDoList::getProjectTitle($data[$key]))) {
+                if (!empty($value) && ($title = ToDoList::getProjectTitle($value))) {
                     $choices[$value] = '(' . $value . ') ' . REDCap::escapeHtml($title);
                 }
             }
@@ -171,11 +196,11 @@ class EntityList extends Page {
             }
 
             $element = RCView::label(['for' => $attrs['id'], 'class' => 'sr-only'], $label) . $element;
-            $filters .= RCView::div(['class' => 'form-group'], $element);
+            $output .= RCView::div(['class' => 'form-group'], $element);
         }
 
-        $filters .= RCView::button(['type' => 'submit', 'class' => 'btn btn-sm btn-primary'], 'Submit');
-        echo RCView::form(['id' => 'redcap-entity-exp-filters-form', 'class' => 'form-inline'], $filters);
+        $output .= RCView::button(['type' => 'submit', 'class' => 'btn btn-sm btn-primary'], 'Submit');
+        echo RCView::form(['id' => 'redcap-entity-exp-filters-form', 'class' => 'form-inline'], $output);
     }
 
     protected function renderTable() {
@@ -187,10 +212,23 @@ class EntityList extends Page {
             return;
         }
 
+
+        $rows = '';
+
+        foreach ($this->rows as $id => $cols) {
+            $row = '';
+
+            foreach ($cols as $value) {
+                 $row .= RCView::td([], $value);
+            }
+
+            $rows .= RCView::tr($this->rows_attributes[$id], $row);
+        }
+
         $this->loadTemplate('entity_list', [
+            'entity_type' => $this->entityTypeKey,
             'header' => $this->header,
-            'rows' => $this->rows,
-            'rows_attributes' => $this->rowsAttributes,
+            'rows' => $rows,
         ]);
     }
 
@@ -256,34 +294,51 @@ class EntityList extends Page {
         }
 
         if (!empty($_GET['__order_by']) && in_array($_GET['__order_by'], $this->getSortableColumns())) {
-            $query->orderBy($_GET['__order_by'], !empty($_GET['__desc']));
+            $key = $_GET['__order_by'];
+
+            $fields = $this->getFields();
+            $sorting_field = empty($fields[$key]['sql_field']) ? 'e.' . $key : 'alias__' . $key;
+
+            $query->orderBy($sorting_field, !empty($_GET['__desc']));
         }
         else {
-            $query->orderBy('updated', true);
+            $query->orderBy('e.updated', true);
         }
 
         if (!$entities = $query->execute()) {
             return;
         }
 
+        $custom_fields = [];
+
+        foreach ($this->getFields() as $key => $info) {
+            if (!empty($info['sql_field'])) {
+                $custom_fields[] = $key;
+            }
+        }
+
+        $raw_results = $query->getRawResults();
+
         foreach ($entities as $id => $entity) {
-            $this->rows[$id] = $this->buildTableRow($entity);
+            $data = $entity->getData();
+
+            foreach ($custom_fields as $key) {
+                $data[$key] = $raw_results[$id]['alias__' . $key];
+            }
+
+            $this->rows[$id] = $this->buildTableRow($data);
         }
     }
 
-    protected function buildTableRow($entity) {
-        $data = array_map('REDCap::escapeHtml', $entity->getData());
-        $properties = $this->entityTypeInfo['properties'] += [
-            'id' => ['name' => '#', 'type' => 'integer'],
-            'created' => ['name' => 'Created', 'type' => 'date'],
-            'updated' => ['name' => 'Updated', 'type' => 'date'],
-        ];
-
+    protected function buildTableRow($data) {
         $row = [];
+
+        $data = array_map('REDCap::escapeHtml', $data);
+        $fields = $this->getFields();
 
         foreach (array_keys($this->header) as $key) {
             if ($key == '__bulk_op') {
-                $row['__bulk_op'] = RCView::checkbox(['name' => 'entities[]', 'value' => $entity->getId(), 'form' => 'redcap-entity-bulk-form']);
+                $row['__bulk_op'] = RCView::checkbox(['name' => 'entities[]', 'value' => $data['id'], 'form' => 'redcap-entity-bulk-form']);
                 continue;
             }
 
@@ -314,20 +369,20 @@ class EntityList extends Page {
                 continue;
             }
 
-            if (!isset($data[$key]) || $data[$key] === '') {
+            if (!isset($data[$key]) || trim($data[$key]) === '') {
                 $row[$key] = '-';
                 continue;
             }
 
-            $info = $properties[$key];
+            $info = $fields[$key];
 
             if (!empty($info['choices']) && isset($info['choices'][$data[$key]])) {
                 $row[$key] = $info['choices'][$data[$key]];
                 continue;
             }
 
-            if (!empty($info['choices_callback']) && method_exists($entity, $info['choices_callback'])) {
-                $choices = $entity->{$info['choices_callback']}();
+            if (!empty($info['choices_callback']) && is_callable($info['choices_callback'])) {
+                $choices = $info['choices_callback']();
 
                 if (isset($choices[$data[$key]])) {
                     $row[$key] = $choices[$data[$key]];
@@ -390,7 +445,7 @@ class EntityList extends Page {
                     }
 
                     // TODO: check access to add link.
-                    $row[$key] = RCView::a(['href' => APP_PATH_WEBROOT . 'ProjectSetup/index.php?pid=' . $row[$key], 'target' => '_blank'], $project->app_title);
+                    $row[$key] = RCView::a(['href' => APP_PATH_WEBROOT . 'index.php?pid=' . $row[$key], 'target' => '_blank'], '(' . $data[$key] . ') ' . $project->app_title);
                     break;
 
                 case 'user':
@@ -401,10 +456,18 @@ class EntityList extends Page {
                     $url = SUPER_USER || ACCOUNT_MANAGER ? APP_PATH_WEBROOT . 'ControlCenter/view_users.php?username=' . $data[$key] : 'mailto:' . $user_info['user_email'];
                     $row[$key] = '(' . $data[$key] . ') ' . $user_info['user_firstname'] . ' ' . $user_info['user_lastname'];
                     $row[$key] = RCView::a(['href' => $url, 'target' => '_blank'], REDCap::escapeHtml($row[$key]));
+                    break;
+
+                case 'email':
+                    if ($row[$key]) {
+                        $row[$key] = RCView::a(['href' => 'mailto:' . $user_info['user_email']], $row[$key]);
+                    }
+
+                    break;
             }
         }
 
-        $this->rowsAttributes[$entity->getId()] = $this->getRowAttributes($entity);
+        $this->rowsAttributes[$data['id']] = $this->getRowAttributes($entity);
         return $row;
     }
 
@@ -415,7 +478,7 @@ class EntityList extends Page {
     protected function getTableHeaderLabels() {
         $labels = ['id' => '#'];
 
-        foreach ($this->entityTypeInfo['properties'] as $key => $info) {
+        foreach ($this->getFields() as $key => $info) {
             if (!in_array($info['type'], ['json', 'long_text'])) {
                 $labels[$key] = $info['name'];
             }
@@ -495,14 +558,26 @@ class EntityList extends Page {
     protected function getQuery() {
         $query = $this->entityFactory->query($this->entityTypeKey);
 
-        foreach ($this->getExposedFilters() as $filter => $info) {
-            if (isset($_GET[$filter]) && $_GET[$filter] !== '') {
-                if ($info['type'] = 'text' && empty($info['choices']) && empty($info['choices_callback'])) {
-                    $query->condition($filter, '%' .$_GET[$filter] . '%', 'like');
-                }
-                else {
-                    $query->condition($filter, $_GET[$filter]);
-                }
+        foreach ($this->getExposedFilters() as $key => $info) {
+            if (!isset($_GET[$key]) || $_GET[$key] === '') {
+                continue;
+            }
+
+            $op = '=';
+            $field = empty($info['sql_field']) ? $key : $info['sql_field'];
+            $value = trim($_GET[$key]);
+
+            if ($info['type'] = 'text' && empty($info['choices']) && empty($info['choices_callback'])) {
+                $op = 'LIKE';
+                $value = '%' . $value . '%';
+            }
+
+            $query->condition($field, $value, $op);
+        }
+
+        foreach ($this->getFields() as $key => $info) {
+            if (!empty($info['sql_field'])) {
+                $query->addExpression($info['sql_field'], 'alias__' . $key);
             }
         }
 

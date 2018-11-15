@@ -7,12 +7,14 @@ use Exception;
 class EntityQuery {
     protected $entityType;
     protected $entityFactory;
-    protected $conditions = [];
-    protected $orderBy = 'id';
+    protected $joins = [];
+    protected $expressions = ['e.id'];
+    protected $orderBy = 'e.id';
     protected $desc = true;
     protected $limit = 0;
     protected $offset = 0;
     protected $countQuery = 0;
+    protected $rawResults;
 
     function __construct($entity_factory, $entity_type) {
         if (!$entity_factory->entityTypeExists($entity_type)) {
@@ -23,8 +25,12 @@ class EntityQuery {
         $this->entityFactory = $entity_factory;
     }
 
-    function condition($property, $value, $op = '=') {
-        $cond = '`' . db_escape($property) .  '` ';
+    function addExpression($expr, $alias) {
+        $this->expressions[] = $expr . ' ' . $alias;
+    }
+
+    function condition($field, $value, $op = '=') {
+        $cond = $field . ' ';
 
         if (is_array($value)) {
             $cond .= 'IN ("' . implode('", "', array_map('db_escape', $value)) . '")';
@@ -33,11 +39,6 @@ class EntityQuery {
             $cond = 'IS NULL';
         }
         else {
-            $op = strtoupper($op);
-            if (!in_array($op, ['=', '>', '<', '<=', '>=', '<>', '!=', 'LIKE'])) {
-                $op = '=';
-            }
-
             if (is_bool($value)) {
                 $value = $value ? '"1"' : '"0"';
             }
@@ -45,15 +46,28 @@ class EntityQuery {
                 $value = '"' . db_escape($value) . '"';
             }
 
+            if (!in_array(strtoupper($op), ['=', '>', '<', '<=', '>=', '<>', '!=', 'LIKE'])) {
+                $op = '=';
+            }
+
             $cond .= $op . ' ' . $value;
         }
 
-        $this->conditions[$property] = $cond;
+        $this->conditions[] = $cond;
         return $this;
     }
 
-    function orderBy($property, $desc = false) {
-        $this->orderBy = $property;
+    function join($table, $alias, $expr, $type = 'INNER') {
+        if (!in_array(strtoupper($type), ['INNER', 'LEFT', 'RIGHT', 'OUTER FULL'])) {
+            return;
+        }
+
+        $this->joins[] = $type . ' JOIN ' . $table . ' ' . $alias . ' ON ' . $expr;
+        return $this;
+    }
+
+    function orderBy($field, $desc = false) {
+        $this->orderBy = $field;
         $this->desc = !empty($desc);
         return $this;
     }
@@ -76,15 +90,16 @@ class EntityQuery {
     function execute($load_objects = true, $require_all_conds = true) {
         $glue = $require_all_conds ? ' AND ' : ' OR ';
         $entity_type = db_escape($this->entityType);
-        $select = $this->countQuery ? 'COUNT(id) count' : 'id';
 
-        $sql = 'SELECT ' . $select . ' FROM `redcap_entity_' . $entity_type . '`';
+        $select =  $this->countQuery ? 'COUNT(e.id) count' : implode(', ', $this->expressions);
+        $sql = 'SELECT ' . $select . ' FROM redcap_entity_' . $entity_type . ' e ' . implode(' ', $this->joins);
+
         if (!empty($this->conditions)) {
             $sql .= ' WHERE ' . implode($glue, $this->conditions);
         }
 
         if (!$this->countQuery) {
-            $sql .= ' ORDER BY `' . db_escape($this->orderBy) . '`';
+            $sql .= ' ORDER BY ' . $this->orderBy;
             if ($this->desc) {
                 $sql .= ' DESC';
             }
@@ -102,6 +117,8 @@ class EntityQuery {
             return false;
         }
 
+        $this->rawResults = [];
+
         if ($this->countQuery) {
             $count = db_fetch_assoc($q);
             return $count['count'];
@@ -109,6 +126,7 @@ class EntityQuery {
 
         $ids = [];
         while ($result = db_fetch_assoc($q)) {
+            $this->rawResults[$result['id']] = $result;
             $ids[$result['id']] = $result['id'];
         }
 
@@ -117,5 +135,9 @@ class EntityQuery {
         }
 
         return $ids;
+    }
+
+    function getRawResults() {
+        return $this->rawResults;
     }
 }
