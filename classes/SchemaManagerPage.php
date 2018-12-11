@@ -14,18 +14,12 @@ class SchemaManagerPage extends Page {
         if (
             $_SERVER['REQUEST_METHOD'] == 'POST' &&
             !empty($_POST['entity_type']) &&
-            !empty($_POST['operation']) && in_array($_POST['operation'], ['build', 'drop'])
+            !empty($_POST['operation']) &&
+            in_array($_POST['operation'], ['build', 'drop']) &&
+            EntityDB::{$_POST['operation'] . 'EntityDBTable'}($_POST['entity_type'])
         ) {
-            $entity_type = $_POST['entity_type'];
-            $operation = $_POST['operation'];
-            $status = $operation == 'build' ? ENTITY_TYPE_PENDING : ENTITY_TYPE_ENABLED;
-
-            if ($factory->getEntityTypeInfo($entity_type, $status)) {
-                EntityDB::{$operation . 'EntityDBTable'}($entity_type);
-                $factory->reset();
-
-                // TODO: message.
-            }
+            $factory->reset();
+            // TODO: message.
         }
 
         $statuses = $factory->getValidStatuses(true);
@@ -44,6 +38,8 @@ class SchemaManagerPage extends Page {
             foreach (['id', 'label', 'module', 'count'] as $key) {
                 $info[$key] = REDCap::escapeHtml($info[$key]);
             }
+
+            $info['table'] = '-';
 
             $modal_vars = ['id' => 'entity-type-' . $info['id'] . '-modal'];
             $btn_attrs = [
@@ -64,11 +60,12 @@ class SchemaManagerPage extends Page {
                         $modal_vars['body'] .= RCView::li([], $msg);
                     }
 
-                    $modal_vars['body'] .= RCView::ul([], $modal_vars['body']);
+                    $modal_vars['body'] = RCView::ul([], $modal_vars['body']);
 
                     break;
 
                 case ENTITY_TYPE_ENABLED:
+                    $info['table'] = 'redcap_entity_' . $info['id'];
                     $info['count'] = $factory->query($type)->countQuery()->execute();
 
                     $btn_type = 'danger';
@@ -82,12 +79,23 @@ class SchemaManagerPage extends Page {
                     }
 
                     $modal_vars['body'] .= '. ' . $info['label'] . ' entities will not work anymore.';
+
+                    $confirm_field = RCView::label(['for' => $info['id'] . '_delete_table'], 'Please type in the name of the db table to confirm');
+                    $confirm_field .= RCView::input([
+                        'id' => $info['id'] . '_delete_table',
+                        'type' => 'text',
+                        'class' => 'form-control delete-table-confirm-name',
+                        'data-entity_type' => $info['id']
+                    ]);
+
+                    $modal_vars['body'] = RCView::div([], $modal_vars['body']) . RCView::br() . RCView::div(['class' => 'form-group'], $confirm_field);
                     $modal_vars['confirm_btn'] = [
-                        'title' => 'Delete table',
+                        'title' => 'I understand the consequences, drop this table',
                         'attrs' => $btn_attrs,
                     ];
 
                     $modal_vars['confirm_btn']['attrs']['data-operation'] = 'drop';
+                    $modal_vars['confirm_btn']['attrs']['disabled'] = true;
                     $modal_vars['confirm_btn']['attrs']['class'] .= 'danger';
 
                     break;
@@ -96,14 +104,14 @@ class SchemaManagerPage extends Page {
                     $btn_type = 'success';
                     $btn_text = 'create db table';
 
-                    $modal_vars['title'] = 'Create redcap_entity_' . $info['id'] . ' db table?';
+                    $modal_vars['title'] = 'Create db table?';
                     $modal_vars['body'] = '';
 
                     foreach (array_keys($info['properties']) as $property) {
                         $modal_vars['body'] .= RCView::li([], $property);
                     }
 
-                    $modal_vars['body'] = 'The following properties will be created:' . RCView::ul([], $modal_vars['body']);
+                    $modal_vars['body'] = 'Table <em>redcap_entity_' . $info['id'] . '</em> will be created, containg the following properties:' . RCView::ul([], $modal_vars['body']);
                     $modal_vars['confirm_btn'] = [
                         'title' => 'Create table',
                         'attrs' => $btn_attrs,
@@ -127,7 +135,7 @@ class SchemaManagerPage extends Page {
             $info['status'] = $statuses[$info['status']];
 
             $row = [];
-            foreach (['id', 'label', 'module', 'status', 'count', 'button'] as $key) {
+            foreach (['id', 'table', 'label', 'module', 'status', 'count', 'button'] as $key) {
                 $row[] = $info[$key];
             }
 
@@ -137,11 +145,12 @@ class SchemaManagerPage extends Page {
 
         $this->loadTemplate('list', [
             'id' => 'entity_type_schema',
-            'header' => ['ID', 'Label', 'Module', 'Status', 'Rows count', ''],
+            'header' => ['ID', 'DB table', 'Label', 'Module', 'Status', 'Rows count', ''],
             'rows' => $rows,
         ]);
 
         $this->jsFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/js/entity_schema_manager.js');
+        $this->cssFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/css/schema_manager.css');
     }
 
     // TODO: move it to a Trait class.

@@ -59,6 +59,14 @@ class EntityFactory {
         foreach ($module->redcap_entity_types() as $type => $info) {
             $info['__pendencies'] = [];
 
+            if (preg_match('/[^a-zA-Z0-9_]+/', $type) === 1) {
+                $info['__pendencies'][] = 'The entity type identifier is invalid. Only alphanumeric and underscore characters are allowed.';
+            }
+
+            if (strlen($type) > 50) {
+                $info['__pendencies'][] = 'The entity type identifier length exceeded the limit of 50 characters.';
+            }
+
             foreach (['label' => 'Label is missing.', 'properties' => 'Properties are missing.'] as $key => $msg) {
                 if (empty($info[$key])) {
                     $info['__pendencies'][] = $msg;
@@ -185,7 +193,10 @@ class EntityFactory {
     }
 
     function getEntityTypeInfo($entity_type, $statuses = ENTITY_TYPE_ENABLED) {
-        if (!is_array($statuses)) {
+        if ($statuses == 'all') {
+            $statuses = $this->getValidStatuses();
+        }
+        elseif (!is_array($statuses)) {
             $statuses = [$statuses];
         }
 

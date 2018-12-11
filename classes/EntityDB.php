@@ -8,19 +8,17 @@ use REDCapEntity\EntityFactory;
 class EntityDB {
 
     static function buildSchema($module_prefix, $reset = false) {
-        if (empty($drop_prefix)) {
+        if (!ExternalModules::getEnabledVersion($module_prefix)) {
             return;
         }
 
         foreach ($factory->getEntityTypes(ENTITY_TYPE_PENDING, $module_prefix, true) as $entity_type) {
             self::buildEntityDBTable($entity_type, $reset);
         }
-
-        return true;
     }
 
     static function dropSchema($module_prefix) {
-        if (empty($drop_prefix)) {
+        if (!ExternalModules::getEnabledVersion($module_prefix)) {
             return;
         }
 
@@ -114,7 +112,14 @@ class EntityDB {
         return true;
     }
 
-    static function deleteEntityDBTable($entity_type) {
-        db_query('DROP TABLE IF EXISTS `redcap_entity_' . db_escape($entity_type) . '`');
+    static function dropEntityDBTable($entity_type) {
+        $factory = new EntityFactory();
+
+        if (!$factory->getEntityTypeInfo($entity_type, ENTITY_TYPE_ENABLED)) {
+            return false;
+        }
+
+        $q = db_query('DROP TABLE IF EXISTS `redcap_entity_' . db_escape($entity_type) . '`');
+        return $q ? true : false;
     }
 }
