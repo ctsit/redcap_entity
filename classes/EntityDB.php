@@ -7,32 +7,39 @@ use REDCapEntity\EntityFactory;
 
 class EntityDB {
 
-    static function buildSchema($module, $reset = false) {
-        $factory = new EntityFactory();
-        if (!$types = $factory->loadModuleEntityTypes($module)) {
-            return false;
+    static function buildSchema($module_prefix, $reset = false) {
+        if (empty($drop_prefix)) {
+            return;
         }
 
-        foreach ($types as $entity_type) {
-            self::buildEntityDBTable($entity_type, $factory, $reset);
+        foreach ($factory->getEntityTypes(ENTITY_TYPE_PENDING, $module_prefix, true) as $entity_type) {
+            self::buildEntityDBTable($entity_type, $reset);
         }
 
         return true;
     }
 
-    static function dropSchema($module) {
-        if (!method_exists($module, 'redcap_entity_types')) {
-            return false;
+    static function dropSchema($module_prefix) {
+        if (empty($drop_prefix)) {
+            return;
         }
 
-        $types = $module->redcap_entity_types();
-        foreach (array_keys($types) as $entity_type) {
-            db_query('DROP TABLE IF EXISTS `redcap_entity_' . $entity_type . '`');
+        $factory = new EntityFactory();
+
+        foreach ($factory->getEntityTypes([ENTITY_TYPE_ENABLED, ENTITY_TYPE_INVALID], $module_prefix, true) as $entity_type) {
+            self::deleteEntityDBTable($entity_type);
         }
     }
 
-    protected static function buildEntityDBTable($entity_type, EntityFactory $factory, $reset = false) {
-        if (!$info = $factory->getEntityTypeInfo($entity_type)) {
+    static function checkEntityDBTable($entity_type) {
+        $q = db_query('SHOW TABLES LIKE "redcap_entity_' . db_escape($entity_type) . '"');
+        return $q && db_num_rows($q);
+    }
+
+    static function buildEntityDBTable($entity_type, $reset = false) {
+        $factory = new EntityFactory();
+
+        if (!$info = $factory->getEntityTypeInfo($entity_type, ENTITY_TYPE_PENDING)) {
             return false;
         }
 
@@ -105,5 +112,9 @@ class EntityDB {
         }
 
         return true;
+    }
+
+    static function deleteEntityDBTable($entity_type) {
+        db_query('DROP TABLE IF EXISTS `redcap_entity_' . db_escape($entity_type) . '`');
     }
 }

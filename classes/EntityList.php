@@ -212,23 +212,12 @@ class EntityList extends Page {
             return;
         }
 
-
-        $rows = '';
-
-        foreach ($this->rows as $id => $cols) {
-            $row = '';
-
-            foreach ($cols as $value) {
-                 $row .= RCView::td([], $value);
-            }
-
-            $rows .= RCView::tr($this->rows_attributes[$id], $row);
-        }
-
-        $this->loadTemplate('entity_list', [
-            'entity_type' => $this->entityTypeKey,
+        $this->loadTemplate('list', [
+            'class' => 'redcap-entity-list',
+            'id' => 'redcap_entity_list-' . $this->entityTypeKey,
             'header' => $this->header,
-            'rows' => $rows,
+            'rows' => $this->rows,
+            'rows_attributes' => $this->rowsAttributes,
         ]);
     }
 
@@ -277,7 +266,19 @@ class EntityList extends Page {
                 'disabled' => true,
             ], REDCap::escapeHtml($op['label']));
 
-            $this->loadTemplate('bulk_operation_modal', ['op' => $op, 'btn_class' => $btn_class]);
+            $this->loadTemplate('modal', [
+                'id' => 'redcap-entity-bulk-operation-modal',
+                'confirm_btn' => [
+                    'title' => $op['messages']['confirmation']['label'],
+                    'attrs' => [
+                        'form' => 'redcap-entity-bulk-form',
+                        'class' => 'btn btn-' . $btn_class,
+                    ],
+                ],
+            ]);
+
+            $form = RCView::hidden(['name' => '__operation']);
+            echo RCView::form(['id' => 'redcap-entity-bulk-form', 'method' => 'post'], $form);
         }
 
         echo RCView::div(['class' => 'redcap-entity-bulk-btns'], $btns);
@@ -344,7 +345,7 @@ class EntityList extends Page {
 
             if (in_array($key, ['__update', '__delete'])) {
                 $args = [
-                    'entity_id' => $entity->getId(),
+                    'entity_id' => $data['id'],
                     'entity_type' => $this->entityTypeKey,
                     'context' => $this->context,
                     '__return_url' => $_SERVER['REQUEST_URI'],
@@ -653,6 +654,7 @@ class EntityList extends Page {
         parent::loadPageStyles();
     }
 
+    // TODO: move it to a Trait class.
     protected function loadTemplate($template, $vars = []) {
         extract($vars);
         include dirname(__DIR__) . '/templates/' . $template . '.php';

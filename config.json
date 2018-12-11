@@ -31,5 +31,14 @@
     "enable-every-page-hooks-on-system-pages": true,
     "compatibility": {
         "redcap-version-min": "8.7.0"
+    },
+    "links": {
+       "control-center": [
+          {
+             "name": "Entity Schema Manager",
+             "icon": "database_table",
+             "url": "manager/schema.php"
+          }
+       ]
     }
 }

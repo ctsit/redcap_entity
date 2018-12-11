@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Provides abstract class for a generic entity.
+ * Provides a class for a generic entity.
  */
 
 namespace REDCapEntity;
@@ -27,6 +27,11 @@ class Entity {
     function __construct(EntityFactory $factory, $entity_type, $id = null) {
         if (!$info = $factory->getEntityTypeInfo($entity_type)) {
             throw new Exception('Invalid entity type.');
+        }
+
+        foreach (array_keys($info['properties']) as $key) {
+            // TODO: set property as protected.
+            $this->{$key} = null;
         }
 
         $this->__entityTypeKey = $entity_type;

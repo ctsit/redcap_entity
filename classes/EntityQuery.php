@@ -17,7 +17,7 @@ class EntityQuery {
     protected $rawResults;
 
     function __construct($entity_factory, $entity_type) {
-        if (!$entity_factory->entityTypeExists($entity_type)) {
+        if (!$entity_factory->getEntityTypeInfo($entity_type)) {
             throw new Exception('Invalid entity type.');
         }
 
