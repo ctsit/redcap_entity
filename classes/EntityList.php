@@ -155,7 +155,7 @@ class EntityList extends Page {
             }
             elseif (!empty($info['choices_callback'])) {
                 $entity = $this->entityFactory->getInstance($this->entityTypeKey);
-                $choices = $entity->{$info['choices_callback']}();
+                $choices = $info['choices_callback']();
             }
             elseif ($info['type'] == 'record') {
                 $choices = Records::getRecordsAsArray(PROJECT_ID);
@@ -269,7 +269,7 @@ class EntityList extends Page {
             $this->loadTemplate('modal', [
                 'id' => 'redcap-entity-bulk-operation-modal',
                 'confirm_btn' => [
-                    'title' => $op['messages']['confirmation']['label'],
+                    'title' => $op['label'],
                     'attrs' => [
                         'form' => 'redcap-entity-bulk-form',
                         'class' => 'btn btn-' . $btn_class,
@@ -327,11 +327,11 @@ class EntityList extends Page {
                 $data[$key] = $raw_results[$id]['alias__' . $key];
             }
 
-            $this->rows[$id] = $this->buildTableRow($data);
+            $this->rows[$id] = $this->buildTableRow($data, $entity);
         }
     }
 
-    protected function buildTableRow($data) {
+    protected function buildTableRow($data, $entity) {
         $row = [];
 
         $data = array_map('REDCap::escapeHtml', $data);

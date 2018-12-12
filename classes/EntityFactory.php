@@ -210,7 +210,15 @@ class EntityFactory {
     }
 
     function query($entity_type) {
-        return new EntityQuery($this, $entity_type);
+        try {
+            $query = new EntityQuery($this, $entity_type);
+        }
+        catch (Exception $e) {
+            // TODO: log event.
+            return false;
+        }
+
+        return $query;
     }
 
     function getEntityTypes($statuses = ENTITY_TYPE_ENABLED, $module_prefix = null, $keys_only = false, $sort = true) {

@@ -172,11 +172,11 @@ class Entity {
         }
 
         if (isset($info['choices_callback'])) {
-            if (!method_exists($this, $info['choices_callback'])) {
+            if (!is_callable($info['choices_callback'])) {
                 return false;
             }
 
-            $choices = $this->{$info['choices_callback']}();
+            $choices = $info['choices_callback']();
             if (!is_array($choices) || !isset($choices[$value])) {
                 return false;
             }
