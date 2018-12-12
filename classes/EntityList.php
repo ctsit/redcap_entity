@@ -468,11 +468,11 @@ class EntityList extends Page {
             }
         }
 
-        $this->rowsAttributes[$data['id']] = $this->getRowAttributes($entity);
+        $this->rowsAttributes[$data['id']] = $this->getRowAttributes($data, $entity);
         return $row;
     }
 
-    protected function getRowAttributes($entity) {
+    protected function getRowAttributes($data, $entity) {
         return [];
     }
 

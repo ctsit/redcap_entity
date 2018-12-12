@@ -9,10 +9,10 @@
                 </tr>
             </thead>
             <?php
-                foreach ($rows as $row) {
+                foreach ($rows as $key => $row) {
                     $values = '';
 
-                    foreach ($row as $key => $value) {
+                    foreach ($row as $value) {
                         $values .= RCView::td([], $value);
                     }
 
