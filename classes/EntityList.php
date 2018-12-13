@@ -212,6 +212,12 @@ class EntityList extends Page {
             return;
         }
 
+        $first_item = ($this->currPage - 1) * $this->pageSize + 1;
+        $last_item = min($this->totalRows, $this->currPage * $this->pageSize);
+        $label = $this->totalRows == 1 ? 'result' : 'results';
+
+        echo RCView::p([], 'Showing ' . $first_item . ' - ' . $last_item . ' of ' . $this->totalRows . ' ' . $label);
+
         $this->loadTemplate('list', [
             'class' => 'redcap-entity-list',
             'id' => 'redcap_entity_list-' . $this->entityTypeKey,
