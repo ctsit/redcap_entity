@@ -31,23 +31,25 @@
 
 
 ## 1. Intro and overview
-As we know, REDCap provides rich features for designing, storing, and managing data entry records. But what happens if we need to store something besides a record?
+As we know, REDCap provides rich features for designing, storing, and managing data entry records. But what happens if we need to handle structures that are not records?
 
-There are surely workarounds for this problem, such as creating a dedicated project for internal storage, appending rows to `redcap_metadata` table, using External Modules settings, adding entries into REDCap logs table, etc. All these are valid solutions, although bring more complexity for module developers (and contributors), and require an extra care to keep REDCap built-in tables safe and consistent.
+There are surely workarounds for this problem, such as creating a dedicated project for internal storage, appending rows to `redcap_metadata` table, using External Modules settings, adding entries into REDCap logs table, etc. All these are valid solutions, they can bring more complexity for developers and require an extra care to keep REDCap built-in tables safe and consistent.
 
 Since UF CTSI team has been recurring facing this challenge, we have decided to build REDCap Entity, a framework that provides developer tools for desiging and creating custom data structures, which represent new "entities" in the system. CRUD operations are fully isolated from REDCap core's database tables.
 
-Maybe the most powerful tool provided by this module is the Entity list builder, which is flexible enough to create pages that varies from simple lists to complex admin UIs. It includes pager, exposed filters, add/edit/delete operations, sortable table columns, and bulk operations. 1 working hour is quite enough to produce a result like this:
+Maybe the most attracting tool provided by this module is the Entity list builder, which can be used to build simple lists or even complex admin UIs. It includes pager, exposed filters, add/edit/delete operations, sortable table columns, and bulk operations. 1 working hour is quite enough to produce a result like this:
 
 TODO: insert image
 
 Our team is successfully using REDCap Entity to develop a few projects, such as Project Ownership and OnCore Client.
 
 ### How it works
-This module is a developer's tool, so in order to design entity types, you need to create a new module that includes a hook, a less-than-10-line plugin, and (optionally) a couple of extensions of built-in classes. This documentation will walk you through that process.
+This module is a developer's tool, so in order to design entity types, you need to create a new module that contains a hook (which defines the structure) and a less-than-10-line plugin (to render the list).
+
+For complex customizations, the built-in classes can be extended. This documentation will walk you through that process.
 
 ### Where entities are stored
-The entities are stored into db tables prefixed with `redcap_entity_`. Example: given a `department` entity type, its db table is named as `redcap_entity_department`. Tables creation/removal is triggered via UI.
+The entities are stored into db tables prefixed with `redcap_entity_`. Example: given a `department` entity type, its db table is named as `redcap_entity_department`. Tables creation/removal is triggered via UI or via enabling/updating/disabling the module.
 
 ## 2. Defining entity types via `redcap_entity_types()` hook
 
@@ -81,9 +83,9 @@ Each structure is an array that expects the following keys:
 | `properties`         | Yes      | The list of entity property definitions - see __Defining entity properties__ section. |
 | `special_keys`       | No       | Adds semantics to your properties - see __Adding semantic to properties__ section. |
 | `class`              | No       | An array that defines the namespace and location of your entity type class (which represents your entity objects), keyed as follows:<br><br>```['name' => <CLASS_NAMESPACE>, 'path' => <RELATIVE_PATH_TO_CLASS_FILE>]```<br><br>If not set, the default class will be used - `REDCapEntity\Entity`. See __Customizing entities behavior__ to learn how to create a custom entity type class. |
-| `allowed_operations` | No       | An array that lists the allowed entity operations. Accepts any combination of "create", "update", and "delete". Set an empty array (`[]`) to do not allow any operations. Defaults to `['create', 'update', 'delete']`. |
+| `allowed_operations` | No       | An array that defines the available operations on lists. Accepts any combination of "create", "update", and "delete" (e.g. `['update', 'delete']`). Leave blank to do not allow any operations. |
 | `loggable_events` | No | The events that must be logged into REDCap Entity Logs page. Accepts any combination of "create", "update", and "delete".  Defaults to none. |
-| `bulk_operations`    | No       | An array that
+| `bulk_operations`    | No       | An array that defines the available bulk operations
 
 Example:
 
@@ -92,27 +94,11 @@ Example:
 
 function redcap_entity_types() {
     $types = [];
-    
-    $types['institution'] = [
-        'label' => 'Institution',
-        'label_plural' => 'Institutions',
-        'icon' => '',
-        'properties' => [
-            'name' => [
-                'name' => 'Name'
-                'type' => 'text',
-                'required' => true,
-            ],
-        ],
-        'special_keys' => [
-            'label' => 'name',
-        ],
-    ];
-    
+
     $types['department'] = [
         'label' => 'Department'.
         'label_plural' => 'Departments',
-        'icon' => '',
+        'icon' => 'home_pencil',
         'properties' => [
             'name' => [
                 'name' => 'Name',
@@ -121,16 +107,33 @@ function redcap_entity_types() {
             ],
             'institution' => [
                 'name' => 'Institution',
-                'type' => 'entity_reference',
-                'entity_type' => 'institution',
+                'type' => 'text',
+                'choices' => [
+                    'inst_1' => 'Institution 1',
+                    'inst_2' => 'Institution 2',
+                    'inst_3' => 'Institution 3',
+                ],
                 'required' => true,
             ],
+            'contact_email' => [
+                'name' => 'Contact email',
+                'type' => 'email',
+            ],
+            'comments' => [
+                'name' => ''
+            ],
         ],
+        'operations' => ['create', 'update', 'delete'],
         'special_keys' => [
             'label' => 'name',
         ],
         'bulk_operations' => [
             'delete' => [
+                'name' => 'Delete',
+                'method' => 'delete',
+                'messages' => [
+                    'success' => 'The departments have been deleted.',
+                ],
             ],
         ],
     ];
