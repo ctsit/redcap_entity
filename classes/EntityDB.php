@@ -25,7 +25,7 @@ class EntityDB {
         $factory = new EntityFactory();
 
         foreach ($factory->getEntityTypes([ENTITY_TYPE_ENABLED, ENTITY_TYPE_INVALID], $module_prefix, true) as $entity_type) {
-            self::deleteEntityDBTable($entity_type);
+            self::dropEntityDBTable($entity_type);
         }
     }
 
