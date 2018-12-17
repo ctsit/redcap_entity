@@ -5,6 +5,7 @@ require_once 'Page.php';
 use REDCapEntity\Page;
 use REDCapEntity\EntityDB;
 use REDCapEntity\EntityFactory;
+use REDCapEntity\StatusMessageQueue;
 use ExternalModules\ExternalModules;
 
 class SchemaManagerPage extends Page {
@@ -19,7 +20,8 @@ class SchemaManagerPage extends Page {
             EntityDB::{$_POST['operation'] . 'EntityDBTable'}($_POST['entity_type'])
         ) {
             $factory->reset();
-            // TODO: message.
+            StatusMessageQueue::enqueue('The db table has been ' . ($_POST['operation'] == 'build' ? 'built' : 'deleted') . '.');
+            StatusMessageQueue::clear();
         }
 
         $statuses = $factory->getValidStatuses(true);
