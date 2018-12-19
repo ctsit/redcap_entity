@@ -9,7 +9,7 @@
     3. _(optional)_ Adding semantic to properties
 3. Creating DB tables
     1. Via UI
-    2. Automatically on module enable
+    2. Programmatically (module enable)
 4. Creating an entity list
     1. Creating a plugin for your list
     2. Defining the context of your list (global, Control Center, or project)
@@ -33,13 +33,13 @@
 
 
 ## 1. Intro and overview
-As we know, REDCap provides rich features for designing, storing, and managing data entry records. However, what happens if we need to manage and storage custom structures that are not records?
+As we know, REDCap provides rich features for designing, storing, and managing data entry records. However, what happens if there is a need to storage and manage non-record data?
 
-There are surely workarounds for this problem, such as creating a dedicated project for internal storage, using External Modules settings, appending rows to `redcap_metadata` table, adding entries into REDCap logs table, etc. All these are valid solutions, although they bring more complexity and require an extra care to keep REDCap built-in tables safe and consistent.
+There are surely workarounds for this problem, such as creating a dedicated project for internal storage, using External Modules settings, adding extra rows to `redcap_metadata` table, inserting entries into REDCap logs table, etc. Despite all these are valid solutions, they bring more complexity and require an extra care to keep REDCap built-in tables safe and consistent.
 
-Since UF CTSI team has been facing this challenge repeatedly, we have decided to build REDCap Entity, a framework for desiging and creating custom data structures, which represent new "entities" in the system. It's flexible and safe, since CRUD operations are fully isolated from REDCap core's database tables.
+Since UF CTSI team has been facing this challenge repeatedly, we have decided to build REDCap Entity - a framework for desiging and creating custom data structures, which represent new "entities" in the system. It's flexible and safe, since CRUD operations are fully isolated from REDCap core's database tables.
 
-Maybe the most attracting tool provided by this module is the Entity List Builder, which can be used to build simple lists or even complex admin UIs. It includes pager, exposed filters, add/edit/delete operations, sortable table columns, and bulk operations. One working hour is quite enough to produce a result like this:
+Maybe the most attracting tool provided by this module is the Entity List Builder, which can be used to build simple lists or even complex admin UIs. It includes pager, exposed filters, add/edit/delete operations, sortable table columns, and bulk operations. They can be integrated either on your project and on Control Center. One working hour is quite enough to produce a result like this:
 
 TODO: insert image
 
@@ -53,7 +53,7 @@ The entities are stored into db tables prefixed with `redcap_entity_`. Example: 
 
 ## 2. Defining entity types via `redcap_entity_types()` hook
 
-### 1. Defining entity types
+### 2.1. Defining entity types
 
 Implement `redcap_entity_types()` to define your entity types. Each entity type should specify a key and a structured array.
 
@@ -116,17 +116,24 @@ function redcap_entity_types() {
                 ],
                 'required' => true,
             ],
+            'project_id' => [
+                'name' => 'Project ID',
+                'type' => 'project',
+                'required' => true,
+            ],
             'contact_email' => [
                 'name' => 'Contact email',
                 'type' => 'email',
             ],
             'comments' => [
-                'name' => ''
+                'name' => 'Comments',
+                'type' => 'long_text',
             ],
         ],
         'operations' => ['create', 'update', 'delete'],
         'special_keys' => [
             'label' => 'label',
+            'project' => 'project_id',
         ],
         'bulk_operations' => [
             'delete' => [
@@ -143,7 +150,7 @@ function redcap_entity_types() {
 }
 ```
 
-### 2. Defining entity properties
+### 2.2. Defining entity properties
 
 As you might have seen from the example above, properties are defined as follows:
 
@@ -167,12 +174,57 @@ Each property structure is an array that allows the following keys:
 | `name`             | Yes      | The property label. |
 | `type`             | Yes      | The data type. Supported types: `text`, `integer`, `email`, `project`, `record`, `date`, `boolean`, `json`, `long_text`, `entity_reference`, `price`, `json`. |
 | `required`         | No       | Boolean that defines whether the property on required on forms. Defaults to `false`. |
-| `disabled`         | No       | Boolean that defines whether the property should be disabled on forms. |
-| `choices`          | No       | If set, the field turns into a  |
-| `choices_callback` | No       | When  |
+| `disabled`         | No       | Boolean that defines whether the property should be disabled on forms. Defaults to `false`. |
+| `choices`          | No       | Set this field if your field should present a list of valid options. Expects an array of options labels, keyed by value. Example: `['option_1' => 'Option 1', 'option_2' => 'Option 2']` |
+| `choices_callback` | No       | Same as `choices`, but instead of giving a fixed list of options, here you define a callable string which returns the options array. |
+| `choices_type`     | No       | If `choices` or `choices callback` this setting defines the display mode of the selection options. Accepts "dropdown" and "radios". Defaults to "dropdown".|
 | `prefix`           | No       | Sets a prefix to a form field. |
+| `entity_type`      | No       | Required only if type = `entity_reference`. Sets the target entity type to be referenced. |
 
+
+### 2.3. Adding semantic to properties
+
+As shown on the previous example, `special_keys` can be used to add semantic to your properties. There are 2 types available:
+
+- **label:** the property that carries the label of your entity
+- **project:** the property carries the context project ID, which means that the entity is only accessible within that particular project
+
+
+```
+<?php
+
+function redcap_entity_types() {
+(...)
+        'special_keys' => [
+            'label' => <LABEL_FIELD>,
+            'project' => <PROJECT_FIELD>,
+        ],
+(...)
+}
+```
+
+Note that defining `special_keys` is not required, but it automates features on entity lists.
 
 ## 2. Creating DB tables
 
-Implementing `hook_entity_types()` is not enough to enable your entity type - creating the db table is
+Implementing `hook_entity_types()` is not enough to enable your entity type. The next and final step is creating your entity db table. There are two available methods: via UI and programmatically.
+
+### 3.1. Via UI
+
+Go to Control Center > Entity DB Manager. Taking the Departments Manager module as our example, you should see the following list:
+
+TODO: insert image
+
+### 3.1. Programmatically (module enable)
+
+This is very useful for skipping the manual creation via UI and triggering your table creation when your module is enabled. To do that you need to add the following code to your module:
+
+```
+<?php
+
+function redcap_module_system_enable($version) {
+    \REDCapEntity\EntityDB::buildSchema($this->PREFIX);
+}
+```
+
+If your module is enabled multiple times, it does not reset your table - unless you explicitly set it by the 2nd paremeter: `\REDCapEntity\EntityDB::buildSchema($this->PREFIX, true)`.
