@@ -13,7 +13,7 @@
 4. Creating an entity list
     1. Creating a plugin for your list
     2. Defining available operations
-    3. _(optional)_ Defining page size 
+    3. _(optional)_ Defining page size
 5. Manipulating entities programmatically
     1. Loading an entity and retrieving data
     2. Creating a new entity
@@ -60,12 +60,12 @@ The entities are stored into db tables prefixed with `redcap_entity_`. Example: 
 
 function redcap_entity_types() {
     $types = [];
-    
+
     $types[<ENTITY_TYPE_1_KEY>] = <ENTITY_TYPE_1_STRUCTURE>;
     $types[<ENTITY_TYPE_2_KEY>] = <ENTITY_TYPE_2_STRUCTURE>;
     (...)
     $types[<ENTITY_TYPE_N_KEY>] = <ENTITY_TYPE_N_STRUCTURE>;
-    
+
     return $types;
 }
 ```
@@ -131,7 +131,7 @@ function redcap_entity_types() {
             'project' => 'project_id',
         ],
     ];
-   
+
     return $types;
 }
 ```
@@ -173,9 +173,9 @@ Each property structure is an array that allows the following keys:
 As shown on the previous example, `special_keys` can be used to add semantic to your properties. By doing that you are basically telling REDCap Entity what a particular field means. There are 2 types available:
 
 - **label:** use this setting if a property of your entity represents the label (e.g. Name, Title, etc). If not set, REDCap Entity will use the internal (auto-incremented) ID as default.
-- **project:** use this setting if your entities are project 
+- **project:** use this setting if your entities are project
 
-Here is again the example. 
+Here is again the example.
 
 ```
 <?php

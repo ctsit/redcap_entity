@@ -12,6 +12,8 @@ class EntityDB {
             return;
         }
 
+        $factory = new EntityFactory();
+
         foreach ($factory->getEntityTypes(ENTITY_TYPE_PENDING, $module_prefix, true) as $entity_type) {
             self::buildEntityDBTable($entity_type, $reset);
         }
