@@ -26,7 +26,7 @@ class SchemaManagerPage extends Page {
 
         $statuses = $factory->getValidStatuses(true);
 
-        $rows = '';
+        $rows = [];
         $form = RCView::hidden(['name' => 'operation']) . RCView::hidden(['name' => 'entity_type']);
         echo RCView::form(['id' => 'entity_type_table_operation', 'method' => 'post'], $form);
 
@@ -53,12 +53,12 @@ class SchemaManagerPage extends Page {
             switch ($info['status']) {
                 case ENTITY_TYPE_INVALID:
                     $btn_type = 'warning';
-                    $btn_text = 'see pendencies';
+                    $btn_text = 'see issues';
 
-                    $modal_vars['title'] = 'Pendencies for <em>' . $info['id'] . '</em>';
+                    $modal_vars['title'] = 'Issues for <em>' . $info['id'] . '</em>';
                     $modal_vars['body'] = '';
 
-                    foreach ($info['__pendencies'] as $msg) {
+                    foreach ($info['__issues'] as $msg) {
                         $modal_vars['body'] .= RCView::li([], $msg);
                     }
 
