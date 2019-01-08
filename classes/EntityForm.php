@@ -56,6 +56,11 @@ class EntityForm extends Page {
         $this->jsFiles[] = ExternalModules::$BASE_URL . 'manager/js/select2.js';
         $this->jsFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/js/entity_fields.js');
 
+        $this->jsSettings['redcapEntity'] = [
+            'entityReferenceUrl' => ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/ajax/entity_reference.php'),
+            'projectReferenceUrl' => ExternalModules::$BASE_URL . 'manager/ajax/get-project-list.php',
+        ];
+
         parent::render($context, $title, $icon);
     }
 

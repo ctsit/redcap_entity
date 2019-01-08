@@ -1,0 +1,24 @@
+{
+    "name": "Department Manager",
+    "namespace": "DepartmentManager\\ExternalModule",
+    "description": "Manage departments.",
+    "permissions": [
+        "redcap_module_system_enable"
+    ],
+    "authors": [
+        {
+            "name": "Tiago Bember",
+            "email": "tbembersimeao@ufl.edu",
+            "institution": "University of Florida - CTSI"
+        }
+    ],
+    "links": {
+        "control-center": [
+            {
+                "name": "Departments",
+                "icon": "home_pencil",
+                "url": "departments.php"
+            }
+        ]
+    }
+}

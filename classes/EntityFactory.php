@@ -13,12 +13,16 @@ use Exception;
 use ExternalModules\ExternalModules;
 use REDCapEntity\EntityQuery;
 
+define('ENTITY_TYPE_INVALID', 'invalid');
+define('ENTITY_TYPE_PENDING', 'pending');
+define('ENTITY_TYPE_ENABLED', 'enabled');
+
 /**
  * Entity factory class.
  */
 class EntityFactory {
-    static protected $entityTypes;
     static protected $modules;
+    static protected $entityTypes;
 
     function __construct($reset = false) {
         if ($reset || !isset(self::$entityTypes)) {
@@ -26,52 +30,127 @@ class EntityFactory {
         }
     }
 
+    /**
+     * Loads entity types of a given module.
+     *
+     * @param object $module
+     *   The module object.
+     *
+     * @return array|bool
+     *   The list of valid entity types of the given module. If the module does
+     *   not implement redcap_entity_types hook, FALSE is returned.
+     */
     function loadModuleEntityTypes($module) {
+        if (isset(self::$modules[$module->PREFIX])) {
+            return self::$modules[$module->PREFIX]['entity_types'];
+        }
+
         if (!method_exists($module, 'redcap_entity_types')) {
             return false;
         }
 
-        $path = ExternalModules::getModuleDirectoryPath($module->PREFIX, $module->VERSION); 
+        $valid_property_types = $this->getValidPropertyTypes();
+        $base_path = ExternalModules::getModuleDirectoryPath($module->PREFIX, $module->VERSION);
 
-        $types = [];
+        foreach ($this->getValidStatuses() as $status) {
+            $types[$status] = [];
+        }
+
         foreach ($module->redcap_entity_types() as $type => $info) {
-            if (!isset(self::$entityTypes[$type])) {
-                if (!isset($info['class']['name']) || !isset($info['class']['path']) || !isset($info['properties'])) {
-                    continue;
-                }
+            $info['__pendencies'] = [];
 
-                include_once $path . '/' . $info['class']['path'];
-                if (!is_subclass_of($info['class']['name'], 'REDCapEntity\Entity')) {
-                    continue;
-                }
-
-                foreach (['special_keys', 'operations'] as $key) {
-                    if (!isset($info[$key])) {
-                        $info[$key] = [];
-                    }
-                }
-
-                $info['module'] = $module->PREFIX;
-                self::$entityTypes[$type] = $info;
+            if (preg_match('/[^a-zA-Z0-9_]+/', $type) === 1) {
+                $info['__pendencies'][] = 'The entity type identifier is invalid. Only alphanumeric and underscore characters are allowed.';
             }
 
-            $types[] = $type;
+            if (strlen($type) > 50) {
+                $info['__pendencies'][] = 'The entity type identifier length exceeded the limit of 50 characters.';
+            }
+
+            foreach (['label' => 'Label is missing.', 'properties' => 'Properties are missing.'] as $key => $msg) {
+                if (empty($info[$key])) {
+                    $info['__pendencies'][] = $msg;
+                }
+            }
+
+            $class = '\REDCapEntity\Entity';
+
+            if (isset($info['class']['path'])) {
+                $path = $base_path . '/' . $info['class']['path'];
+
+                if (file_exists($path)) {
+                    require_once $path;
+                }
+                else {
+                    $info['__pendencies'][] = 'Class file "' . $path .  '" does not exist.';
+                }
+            }
+
+            if (isset($info['class']['name'])) {
+                if (!class_exists($info['class']['name'])) {
+                    $info['__pendencies'][] = 'Class "' . $info['class']['name'] .  '" could not be found.';
+                }
+                elseif (!is_subclass_of($info['class']['name'], 'REDCapEntity\Entity')) {
+                    $info['__pendencies'][] = 'Class "' . $info['class']['name'] .  '" does not implement EntityInterface.';
+                }
+                else {
+                    $class = $info['class']['name'];
+                }
+            }
+
+            $info['class'] = $class;
+
+            if (!is_array($info['properties'])) {
+                $info['__pendencies'][] = 'Invalid properties list.';
+            }
+            else {
+                foreach ($info['properties'] as $key => $property_info) {
+                    if (empty($property_info['type']) || !in_array(strtolower($property_info['type']), $valid_property_types)) {
+                        $info['__pendencies'][] = 'Invalid property type for "' . $key . '".';
+                    }
+                }
+            }
+
+            // TODO: validate option callbacks.
+            // TODO: validate special keys and bulk operations.
+
+            foreach (['special_keys', 'operations'] as $key) {
+                if (!isset($info[$key])) {
+                    $info[$key] = [];
+                }
+            }
+
+            $info['module'] = $module->PREFIX;
+
+            if (!empty($info['__pendencies'])) {
+                $info['status'] = ENTITY_TYPE_INVALID;
+            }
+            elseif (EntityDB::checkEntityDBTable($type)) {
+                $info['status'] = ENTITY_TYPE_ENABLED;
+            }
+            else {
+                $info['status'] = ENTITY_TYPE_PENDING;
+            }
+
+            self::$entityTypes[$info['status']][$type] = $info;
+            $types[$info['status']][$type] = &self::$entityTypes[$info['status']][$type];
         }
 
-        if (!empty($types)) {
-            self::$modules[$module->PREFIX] = $module->VERSION;
-        }
+        self::$modules[$module->PREFIX] = [
+            'version' => $module->VERSION,
+            'entity_types' => $types,
+        ];
 
         return $types;
     }
 
     function getInstance($entity_type, $id = null) {
-        if (!isset(self::$entityTypes[$entity_type])) {
+        if (!$info = $this->getEntityTypeInfo($entity_type)) {
             return false;
         }
 
         try {
-            $class = self::$entityTypes[$entity_type]['class']['name'];
+            $class = $info['class'];
             $entity = new $class($this, $entity_type, $id);
         }
         catch (Exception $e) {
@@ -82,7 +161,7 @@ class EntityFactory {
     }
 
     function loadInstances($entity_type, $ids) {
-        if (!isset(self::$entityTypes[$entity_type])) {
+        if (!$info = $this->getEntityTypeInfo($entity_type)) {
             return false;
         }
 
@@ -90,7 +169,7 @@ class EntityFactory {
 
         try {
             foreach ($ids as $id) {
-                $class = self::$entityTypes[$entity_type]['class']['name'];
+                $class = $info['class'];
                 $entities[$id] = new $class($this, $entity_type, $id);
             }
         }
@@ -113,37 +192,113 @@ class EntityFactory {
         return $entity;
     }
 
-    function getEntityTypeInfo($entity_type) {
-        if (!isset(self::$entityTypes[$entity_type])) {
-            return false;
+    function getEntityTypeInfo($entity_type, $statuses = ENTITY_TYPE_ENABLED) {
+        if ($statuses == 'all') {
+            $statuses = $this->getValidStatuses();
+        }
+        elseif (!is_array($statuses)) {
+            $statuses = [$statuses];
         }
 
-        return self::$entityTypes[$entity_type];
+        foreach ($statuses as $status) {
+            if (isset(self::$entityTypes[$status][$entity_type])) {
+                return self::$entityTypes[$status][$entity_type];
+            }
+        }
+
+        return false;
     }
 
     function query($entity_type) {
-        return new EntityQuery($this, $entity_type);
+        try {
+            $query = new EntityQuery($this, $entity_type);
+        }
+        catch (Exception $e) {
+            // TODO: log event.
+            return false;
+        }
+
+        return $query;
     }
 
-    function entityTypeExists($entity_type) {
-        return isset(self::$entityTypes[$entity_type]);
+    function getEntityTypes($statuses = ENTITY_TYPE_ENABLED, $module_prefix = null, $keys_only = false, $sort = true) {
+        if ($module_prefix) {
+            if (!isset(self::$modules[$module_prefix])) {
+                return false;
+            }
+
+            $list = self::$modules[$module_prefix]['entity_types'];
+        }
+        else {
+            $list = self::$entityTypes;
+        }
+
+        if ($statuses == 'all') {
+            $statuses = $this->getValidStatuses();
+        }
+        else {
+            if (!is_array($statuses)) {
+                $statuses = [$statuses];
+            }
+        }
+
+        $types = [];
+
+        foreach ($statuses as $status) {
+            if (isset($list[$status])) {
+                $types += $list[$status];
+            }
+        }
+
+        if ($sort) {
+            ksort($types);
+        }
+
+        return $keys_only ? array_keys($types) : $types;
     }
 
-    function getEntityTypes($keys_only = false) {
-        return $keys_only ? array_keys(self::$entityTypes) : self::$entityTypes;
+    function getValidStatuses($include_labels = false) {
+        $keys = [
+            ENTITY_TYPE_ENABLED,
+            ENTITY_TYPE_PENDING,
+            ENTITY_TYPE_INVALID,
+        ];
+
+        if (!$include_labels) {
+            return $keys;
+        }
+
+        return array_combine($keys, ['Enabled', 'Pending', 'Invalid']);
     }
 
-    function getModules() {
-        return self::$modules;
-    }
-
-    protected function reset() {
+    function reset() {
         self::$entityTypes = [];
         self::$modules = [];
+
+        foreach ($this->getValidStatuses() as $status) {
+            self::$entityTypes[$status] = [];
+        }
 
         foreach (ExternalModules::getEnabledModules() as $prefix => $version) {
             $module = ExternalModules::getModuleInstance($prefix, $version);
             $this->loadModuleEntityTypes($module);
         }
+    }
+
+    protected function getValidPropertyTypes() {
+        return [
+            'user',
+            'email',
+            'text',
+            'record',
+            'entity_reference',
+            'price',
+            'project',
+            'date',
+            'integer',
+            'boolean',
+            'json',
+            'long_text',
+        ];
     }
 }

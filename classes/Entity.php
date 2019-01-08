@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Provides abstract class for a generic entity.
+ * Provides a class for a generic entity.
  */
 
 namespace REDCapEntity;
@@ -27,6 +27,11 @@ class Entity {
     function __construct(EntityFactory $factory, $entity_type, $id = null) {
         if (!$info = $factory->getEntityTypeInfo($entity_type)) {
             throw new Exception('Invalid entity type.');
+        }
+
+        foreach (array_keys($info['properties']) as $key) {
+            // TODO: set property as protected.
+            $this->{$key} = null;
         }
 
         $this->__entityTypeKey = $entity_type;
@@ -106,6 +111,13 @@ class Entity {
         }
 
         switch ($info['type']) {
+            case 'email':
+                if (filter_var($value, FILTER_VALIDATE_EMAIL) === false) {
+                    return false;
+                }
+
+                break;
+
             case 'text':
                 if (!is_string($value)) {
                     return false;
@@ -160,11 +172,11 @@ class Entity {
         }
 
         if (isset($info['choices_callback'])) {
-            if (!method_exists($this, $info['choices_callback'])) {
+            if (!is_callable($info['choices_callback'])) {
                 return false;
             }
 
-            $choices = $this->{$info['choices_callback']}();
+            $choices = $info['choices_callback']();
             if (!is_array($choices) || !isset($choices[$value])) {
                 return false;
             }
