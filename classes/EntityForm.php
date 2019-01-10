@@ -207,22 +207,15 @@ class EntityForm extends Page {
                 }
             }
             else {
-                $attrs['value'] = $data[$key];
-
                 switch ($info['type']) {
                     case 'long_text':
                     case 'json':
-                        $row .= RCView::textarea($attrs);
+                        $row .= RCView::textarea($attrs, $data[$key]);
                         break;
 
-                    case 'price':
-                        $attrs['value'] = number_format($data[$key] / 100, 2);
-
-                        if (empty($info['prefix'])) {
-                            $info['prefix'] = '$';
-                        }
-
                     default:
+                        $attrs['value'] = $data[$key];
+
                         if ($info['type'] == 'date') {
                             if (is_numeric($attrs['value'])) {
                                 $attrs['value'] = date('m/d/Y', $attrs['value']);
@@ -255,12 +248,19 @@ class EntityForm extends Page {
         $this->validate($data, $this->entity, $this->entityTypeInfo);
 
         if (!empty($this->errors)) {
-            $items = '';
-            foreach ($this->errors as $error) {
-                $items .= RCView::li([], $error);
+            if (count($this->errors) == 1) {
+                $message = reset($this->errors);
+            }
+            else {
+                $message = '';
+                foreach ($this->errors as $error) {
+                    $message .= RCView::li([], $error);
+                }
+
+                $message = RCView::ul(['id' => 'redcap-entity-error-list'], $message);
             }
 
-            StatusMessageQueue::enqueue(RCView::ul([], $items), 'error');
+            StatusMessageQueue::enqueue($message, 'error');
         }
         else {
             $label = empty($this->entityTypeInfo['label']) ? 'entity' : $this->entityTypeInfo['label'];
@@ -269,7 +269,7 @@ class EntityForm extends Page {
                 StatusMessageQueue::enqueue($msg, 'error');
             }
             else {
-                StatusMessageQueue::enqueue('The ' . $label . ' has been saved successfully.');
+                StatusMessageQueue::enqueue('The ' . $label . ' has been saved.');
 
                 if (isset($_GET['__return_url'])) {
                     redirect($_GET['__return_url']);

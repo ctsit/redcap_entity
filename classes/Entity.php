@@ -115,7 +115,7 @@ class Entity {
 
         switch ($info['type']) {
             case 'email':
-                if (filter_var($value, FILTER_VALIDATE_EMAIL) === false) {
+                if (!isEmail($value)) {
                     return false;
                 }
 
