@@ -9,8 +9,9 @@ namespace REDCapEntity\ExternalModule;
 require_once 'classes/EntityDB.php';
 require_once 'classes/EntityFactory.php';
 require_once 'classes/Page.php';
-require_once 'classes/EntityDeleteForm.php';
+require_once 'classes/EntityFormTrait.php';
 require_once 'classes/EntityForm.php';
+require_once 'classes/EntityDeleteForm.php';
 require_once 'classes/EntityList.php';
 require_once 'classes/StatusMessageQueue.php';
 

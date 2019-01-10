@@ -63,7 +63,6 @@ class EntityDB {
                     break;
 
                 case 'entity_reference':
-                case 'price':
                 case 'project':
                     $info['unsigned'] = true;
 

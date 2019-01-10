@@ -14,7 +14,11 @@ abstract class Page {
     abstract protected function renderPageBody();
 
     function render($context, $title, $icon) {
-        if (!in_array($context, $this->getValidContexts())) {
+        if (
+            !in_array($context, $this->getValidContexts()) ||
+            ($context == 'project' && !defined('PROJECT_ID')) ||
+            !$this->checkPermissions($context)
+        ) {
             redirect(APP_PATH_WEBROOT_PARENT);
         }
 
@@ -67,6 +71,10 @@ abstract class Page {
         else {
             include_once APP_PATH_DOCROOT . $footer_path;
         }
+    }
+
+    protected function checkPermissions($context) {
+        return true;
     }
 
     protected function getValidContexts() {

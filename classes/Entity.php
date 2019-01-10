@@ -23,6 +23,7 @@ class Entity {
     protected $__entityTypeKey;
     protected $__entityTypeInfo;
     protected $__oldData;
+    protected $__errors = [];
 
     function __construct(EntityFactory $factory, $entity_type, $id = null) {
         if (!$info = $factory->getEntityTypeInfo($entity_type)) {
@@ -49,7 +50,7 @@ class Entity {
             return false;
         }
 
-        if ($this->setData($data)) {
+        if (!$this->setData($data)) {
             return false;
         }
 
@@ -57,33 +58,35 @@ class Entity {
     }
 
     function setData($data) {
-        $errors = [];
-
-        if (isset($this->__entityTypeInfo['special_keys']['uuid'])) {
-            unset($data[$this->__entityTypeInfo['special_keys']['uuid']]);
-        }
+        $this->__errors = [];
 
         $data = $this->_removeBasicProperties($data);
         foreach ($data as $key => $value) {
             if (!$this->validateProperty($key, $value)) {
-                $errors[] = $key;
+                $this->__errors[] = $key;
             }
         }
 
-        if (empty($errors)) {
-            foreach ($data as $key => $value) {
-                if ($value === '') {
-                    $value = null;
-                }
-                elseif ($this->__entityTypeInfo['properties'][$key]['type'] == 'json' && $value !== null && (!is_string($value) || json_decode($value) === null)) {
-                    $value = json_encode($value);
-                }
-
-                $this->{$key} = $value;
-            }
+        if (!empty($this->__errors)) {
+            return false;
         }
 
-        return $errors;
+        foreach ($data as $key => $value) {
+            if ($value === '') {
+                $value = null;
+            }
+            elseif (
+                $this->__entityTypeInfo['properties'][$key]['type'] == 'json' &&
+                $value !== null &&
+                (!is_string($value) || json_decode($value) === null)
+            ) {
+                $value = json_encode($value);
+            }
+
+            $this->{$key} = $value;
+        }
+
+        return true;
     }
 
     function delete() {
@@ -135,9 +138,6 @@ class Entity {
 
             case 'record':
                 return defined('PROJECT_ID') && Records::recordExists(PROJECT_ID, $value);
-
-            case 'price':
-                return intval($value) == $value && $value >= 0;
 
             case 'user':
                 $db = new RedCapDB();
@@ -245,6 +245,10 @@ class Entity {
         return $this->__entityTypeInfo;
     }
 
+    function getErrors() {
+        return $this->__errors;
+    }
+
     function save($message = '') {
         $data = $this->getData();
         $data['updated'] = strtotime(NOW);
@@ -277,10 +281,6 @@ class Entity {
         else {
             unset($data['id']);
             $data['created'] = $data['updated'];
-
-            if (isset($this->__entityTypeInfo['special_keys']['uuid'])) {
-                $data[$this->__entityTypeInfo['special_keys']['uuid']] = generateRandomHash(16);
-            }
 
             foreach (['author' => 'USERID', 'project' => 'PROJECT_ID'] as $key => $const) {
                 if (defined($const) && isset($this->__entityTypeInfo['special_keys'][$key])) {

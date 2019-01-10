@@ -2,6 +2,6 @@
 
 use REDCapEntity\EntityList;
 
-$list = new EntityList('department', $module);
+$list = new EntityList('study_site', $module);
 $list->setOperations(['create', 'delete', 'update']);
-$list->render('control_center');
+$list->render('project');

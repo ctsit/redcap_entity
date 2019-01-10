@@ -24,6 +24,9 @@ class EntityList extends Page {
     protected $pageSize = 25;
     protected $pagerSize = 10;
     protected $currPage = 1;
+    protected $cols;
+    protected $sortableCols;
+    protected $exposedFilters;
     protected $header = [];
     protected $rows = [];
     protected $rowsAttributes = [];
@@ -49,12 +52,17 @@ class EntityList extends Page {
             $this->currPage = $_GET['pager'];
         }
 
+        $fields = $this->getFields();
+
+        $this->cols = array_keys($fields);
         $this->formUrl = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/entity.php');
     }
 
     function setPager($page_size, $pager_size) {
         $this->pageSize = $page_size;
         $this->pagerSize = $pager_size;
+
+        return $this;
     }
 
     function setOperations($operations) {
@@ -68,13 +76,37 @@ class EntityList extends Page {
                 $this->operations[] = $operation;
             }
         }
+
+        return $this;
     }
 
-    function enableBulkDelete() {
-        $this->bulkOperations['delete'] = [
-            'label' => 'Delete',
-            'message' => 'The ' . $this->entityTypeInfo['label_plural'] . ' have been deleted.',
+    function setCols($cols) {
+        $this->cols = $cols;
+        return $this;
+    }
+
+    function setSortableCols($cols) {
+        $this->sortableCols = $cols;
+        return $this;
+    }
+
+    function setExposedFilters($filters) {
+        $this->exposedFilters = $filters;
+        return $this;
+    }
+
+    function setBulkOperation($method, $label, $message, $btn_color = null) {
+        $this->bulkOperations[$method] = [
+            'label' => $label,
+            'message' => $message,
+            'btn_color' => $btn_color,
         ];
+
+        return $this;
+    }
+
+    function setBulkDelete() {
+        return $this->setBulkOperation('delete', 'Delete', 'The ' . $this->entityTypeInfo['label_plural'] . ' have been deleted.', 'red');
     }
 
     function render($context, $title = null, $icon = null) {
@@ -110,21 +142,24 @@ class EntityList extends Page {
         $args = [
             'entity_type' => $this->entityTypeKey,
             'context' => $this->context,
-            '__return_url' => REDCap::escapeHtml($_SERVER['REQUEST_URI']),
+            '__return_url' => $_SERVER['REQUEST_URI'],
         ];
+
+        if (defined('PROJECT_ID')) {
+            $args['pid'] = PROJECT_ID;
+        }
 
         $title = RCView::i(['class' => 'fa fa-plus-circle']) . ' ';
         $title .= isset($this->entityTypeInfo['label']) ? $this->entityTypeInfo['label'] : 'Entity';
 
         echo RCView::button([
             'class' => 'btn btn-success btn-sm redcap-entity-add-btn',
-            'onclick' => 'location.href = "' . $this->formUrl . '&' . http_build_query($args) . '";',
+            'onclick' => 'location.href = "' . $this->formUrl . '&' . htmlentities(http_build_query($args)) . '";',
         ], $title);
     }
 
     protected function getFields() {
-        return $this->entityTypeInfo['properties'] + [
-            'id' => ['name' => '#', 'type' => 'integer'],
+        return ['id' => ['name' => '#', 'type' => 'integer']] + $this->entityTypeInfo['properties'] + [
             'created' => ['name' => 'Created', 'type' => 'date'],
             'updated' => ['name' => 'Updated', 'type' => 'date'],
         ];
@@ -134,10 +169,12 @@ class EntityList extends Page {
         $filters = [];
         $fields = $this->getFields();
 
-        unset($fields['id'], $fields['created'], $fields['updated']);
+        if (!isset($this->exposedFilters)) {
+            $this->exposedFilters = $this->cols;
+        }
 
-        foreach (array_keys($this->getTableHeaderLabels()) as $key) {
-            if (isset($fields[$key])) {
+        foreach ($this->exposedFilters as $key) {
+            if (isset($fields[$key]) && !in_array($fields[$key]['type'], ['json', 'date'])) {
                 $filters[$key] = $fields[$key];
             }
         }
@@ -275,7 +312,7 @@ class EntityList extends Page {
         foreach ($this->bulkOperations as $key => $op) {
             $btn_class = 'primary';
 
-            if (!empty($op['color'])) {
+            if (!empty($op['btn_color'])) {
                 $btn_classes = [
                     'green' => 'success',
                     'yellow' => 'warning',
@@ -286,8 +323,8 @@ class EntityList extends Page {
                     'light_blue' => 'info',
                 ];
 
-                if (isset($btn_classes[$op['color']])) {
-                    $btn_class = $btn_classes[$op['color']];
+                if (isset($btn_classes[$op['btn_color']])) {
+                    $btn_class = $btn_classes[$op['btn_color']];
                 }
             }
 
@@ -319,6 +356,7 @@ class EntityList extends Page {
 
     protected function buildTableRows() {
         $query = $this->getQuery();
+        $fields = $this->getFields();
 
         if ($this->pageSize) {
             $count_query = clone $query;
@@ -327,12 +365,9 @@ class EntityList extends Page {
             $query->limit($this->pageSize, ($this->currPage - 1) * $this->pageSize);
         }
 
-        if (!empty($_GET['__order_by']) && in_array($_GET['__order_by'], $this->getSortableColumns())) {
+        if (!empty($_GET['__order_by']) && in_array($_GET['__order_by'], $this->getSortableCols())) {
             $key = $_GET['__order_by'];
-
-            $fields = $this->getFields();
             $sorting_field = empty($fields[$key]['sql_field']) ? 'e.' . $key : 'alias__' . $key;
-
             $query->orderBy($sorting_field, !empty($_GET['__desc']));
         }
         else {
@@ -345,7 +380,7 @@ class EntityList extends Page {
 
         $custom_fields = [];
 
-        foreach ($this->getFields() as $key => $info) {
+        foreach ($fields as $key => $info) {
             if (!empty($info['sql_field'])) {
                 $custom_fields[] = $key;
             }
@@ -367,8 +402,8 @@ class EntityList extends Page {
     protected function buildTableRow($data, $entity) {
         $row = [];
 
-        $data = array_map('REDCap::escapeHtml', $data);
         $fields = $this->getFields();
+        $data = array_map('REDCap::escapeHtml', $data);
 
         foreach (array_keys($this->header) as $key) {
             if ($key == '__bulk_op') {
@@ -384,6 +419,10 @@ class EntityList extends Page {
                     '__return_url' => $_SERVER['REQUEST_URI'],
                 ];
 
+                if (defined('PROJECT_ID')) {
+                    $args['pid'] = PROJECT_ID;
+                }
+
                 $path = $this->formUrl;
 
                 if ($key == '__update') {
@@ -394,7 +433,7 @@ class EntityList extends Page {
                     $title = 'delete';
                 }
 
-                $row[$key] = RCView::a(['href' => $path . '&' . http_build_query($args)], $title);
+                $row[$key] = RCView::a(['href' => $path . '&' . htmlentities(http_build_query($args))], $title);
                 continue;
             }
 
@@ -509,19 +548,19 @@ class EntityList extends Page {
         return [];
     }
 
-    protected function getTableHeaderLabels() {
-        $labels = ['id' => '#'];
+    protected function getColsLabels() {
+        $labels = [];
+        $fields = $this->getFields();
 
-        foreach ($this->getFields() as $key => $info) {
-            if (!in_array($info['type'], ['json', 'long_text'])) {
-                $labels[$key] = $info['name'];
+        foreach ($this->cols as $key) {
+            if (!isset($fields[$key])) {
+                continue;
+            }
+
+            if (!in_array($fields[$key]['type'], ['json', 'long_text'])) {
+                $labels[$key] = $fields[$key]['name'];
             }
         }
-
-        $labels += [
-            'created' => 'Created',
-            'updated' => 'Updated',
-        ];
 
         foreach (['update', 'delete'] as $op) {
             if (in_array($op, $this->operations)) {
@@ -534,6 +573,26 @@ class EntityList extends Page {
         }
 
         return $labels;
+    }
+
+    protected function getSortableCols() {
+        $fields = $this->getFields();
+
+        if (!isset($this->sortableCols)) {
+            $this->sortableCols = $this->cols;
+        }
+
+        foreach ($this->sortableCols as $key) {
+            if (!isset($fields[$key])) {
+                continue;
+            }
+
+            if (in_array($fields[$key]['type'], ['text', 'integer', 'user', 'project', 'date', 'email'])) {
+                $sortable[] = $key;
+            }
+        }
+
+        return $sortable;
     }
 
     protected function buildTableHeader() {
@@ -553,12 +612,12 @@ class EntityList extends Page {
             unset($args['__order_by'], $args['__desc']);
         }
 
-        $header = $this->getTableHeaderLabels();
+        $header = $this->getColsLabels();
         if (!empty($this->bulkOperations)) {
             $header = ['__bulk_op' => RCView::checkbox(['name' => 'all_entities', 'form' => 'redcap-entity-bulk-form'])] + $header;
         }
 
-        foreach ($this->getSortableColumns() as $key) {
+        foreach ($this->getSortableCols() as $key) {
             if (!isset($header[$key])) {
                 continue;
             }
@@ -577,15 +636,6 @@ class EntityList extends Page {
         }
 
         $this->header = $header;
-    }
-
-    protected function getSortableColumns() {
-        $sortable = ['id', 'created', 'updated'];
-        if (isset($this->entityTypeInfo['special_keys']['name'])) {
-            $sortable[] = $this->entityTypeInfo['special_keys']['name'];
-        }
-
-        return $sortable;
     }
 
     protected function getQuery() {

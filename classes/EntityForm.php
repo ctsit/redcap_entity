@@ -11,6 +11,7 @@ use ToDoList;
 use User;
 
 class EntityForm extends Page {
+    use EntityFormTrait;
 
     protected $entity;
     protected $entityTypeInfo;
@@ -28,6 +29,17 @@ class EntityForm extends Page {
 
     protected function buildFieldsInfo() {
         $this->fields = $this->entityTypeInfo['properties'];
+
+        $keys = ['author'];
+        if (defined('PROJECT_ID')) {
+            $keys[] = 'project';
+        }
+
+        foreach ($keys as $key) {
+            if (!empty($this->entityTypeInfo['special_keys'][$key])) {
+                unset($this->fields[$this->entityTypeInfo['special_keys'][$key]]);
+            }
+        }
     }
 
     protected function getSubmitLabel() {
@@ -92,7 +104,7 @@ class EntityForm extends Page {
     protected function buildFormElements($entity, $entity_type_info, $data) {
         $rows = '';
 
-        foreach ($entity_type_info['properties'] as $key => $info) {
+        foreach ($this->fields as $key => $info) {
             $label = REDCap::escapeHtml($info['name']);
 
             if ($info['type'] == 'entity_reference' && !empty($info['entity_type'])) {
@@ -102,10 +114,6 @@ class EntityForm extends Page {
             }
 
             $data[$key] = REDCap::escapeHtml($data[$key]);
-
-            if (!empty($entity_type_info['special_keys']['uuid']) && $entity_type_info['special_keys']['uuid'] == $key) {
-                continue;
-            }
 
             $attrs = ['name' => $key, 'class' => 'form-control', 'id' => 'redcap-entity-prop-' . $key];
 
@@ -285,10 +293,9 @@ class EntityForm extends Page {
     }
 
     protected function validate($data, $entity, $entity_type_info) {
-        $elements = $entity_type_info['properties'];
         $filtered = [];
 
-        foreach ($elements as $key => $info) {
+        foreach ($this->fields as $key => $info) {
             if (empty($info['required']) || (isset($data[$key]) && $data[$key] !== '')) {
                 $filtered[$key] = $data[$key];
 
@@ -313,15 +320,15 @@ class EntityForm extends Page {
             $this->errors[$key] = $label . ' is required.';
         }
 
-        if ($invalid_fields = $entity->setData($filtered)) {
-            foreach ($invalid_ields as $key) {
-                $label = empty($elements[$key]['name']) ? $key : $elements[$key]['name'];
+        if (!$entity->setData($filtered)) {
+            foreach ($entity->getErrors() as $key) {
+                $label = empty($this->fields[$key]['name']) ? $key : $this->fields[$key]['name'];
                 $this->errors[$key] = $label . ' is invalid';
             }
         }
     }
 
-    protected function save($entity) {
+    protected function save() {
         return $this->entity->save();
     }
 }
