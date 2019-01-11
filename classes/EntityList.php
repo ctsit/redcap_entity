@@ -389,7 +389,11 @@ class EntityList extends Page {
         $raw_results = $query->getRawResults();
 
         foreach ($entities as $id => $entity) {
-            $data = $entity->getData();
+            $data = [
+                'id' => $id,
+                'created' => $entity->getCreationTimestamp(),
+                'updated' => $entity->getLastUpdateTimestamp(),
+            ] + $entity->getData();
 
             foreach ($custom_fields as $key) {
                 $data[$key] = $raw_results[$id]['alias__' . $key];

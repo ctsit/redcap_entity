@@ -19,11 +19,12 @@ class Entity {
     protected $id;
     protected $created;
     protected $updated;
-    protected $__factory;
-    protected $__entityTypeKey;
-    protected $__entityTypeInfo;
-    protected $__oldData;
-    protected $__errors = [];
+    protected $data = [];
+    protected $factory;
+    protected $entityTypeKey;
+    protected $entityTypeInfo;
+    protected $oldData;
+    protected $errors;
 
     function __construct(EntityFactory $factory, $entity_type, $id = null) {
         if (!$info = $factory->getEntityTypeInfo($entity_type)) {
@@ -31,18 +32,17 @@ class Entity {
         }
 
         foreach (array_keys($info['properties']) as $key) {
-            // TODO: set property as protected.
-            $this->{$key} = null;
+            $this->data[$key] = null;
         }
 
-        $this->__entityTypeKey = $entity_type;
-        $this->__entityTypeInfo = $info;
+        $this->entityTypeKey = $entity_type;
+        $this->entityTypeInfo = $info;
 
         if ($id && !$this->load($id)) {
             throw new Exception('The entity does not exist.');
         }
 
-        $this->__factory = $factory;
+        $this->factory = $factory;
     }
 
     function create($data) {
@@ -58,16 +58,15 @@ class Entity {
     }
 
     function setData($data) {
-        $this->__errors = [];
+        $this->errors = [];
 
-        $data = $this->_removeBasicProperties($data);
         foreach ($data as $key => $value) {
             if (!$this->validateProperty($key, $value)) {
-                $this->__errors[] = $key;
+                $this->errors[] = $key;
             }
         }
 
-        if (!empty($this->__errors)) {
+        if (!empty($this->errors)) {
             return false;
         }
 
@@ -76,14 +75,14 @@ class Entity {
                 $value = null;
             }
             elseif (
-                $this->__entityTypeInfo['properties'][$key]['type'] == 'json' &&
+                $this->entityTypeInfo['properties'][$key]['type'] == 'json' &&
                 $value !== null &&
                 (!is_string($value) || json_decode($value) === null)
             ) {
                 $value = json_encode($value);
             }
 
-            $this->{$key} = $value;
+            $this->data[$key] = $value;
         }
 
         return true;
@@ -94,21 +93,31 @@ class Entity {
             return false;
         }
         
-        $entity_type = db_real_escape_string($this->__entityTypeKey);
+        $entity_type = db_escape($this->entityTypeKey);
         if (!db_query('DELETE FROM `redcap_entity_' . $entity_type . '` WHERE id = "' . intval($this->id) . '"')) {
             return false;
         }
 
+        // Resetting object.
         $this->id = null;
+        $this->created = null;
+        $this->updated = null;
+        $this->errors = null;
+        $this->oldData = null;
+
+        foreach (array_keys($this->data) as $key) {
+            $this->data[$key] = null;
+        }
+
         return true;
     }
 
     protected function validateProperty($key, $value) {
-        if (!property_exists($this, $key) || !isset($this->__entityTypeInfo['properties'][$key])) {
+        if (!array_key_exists($key, $this->data) || !isset($this->entityTypeInfo['properties'][$key])) {
             return false;
         }
 
-        $info = $this->__entityTypeInfo['properties'][$key];
+        $info = $this->entityTypeInfo['properties'][$key];
         if ($value === null || $value === '') {
             return empty($info['required']);
         }
@@ -158,7 +167,7 @@ class Entity {
                 return is_bool($value) || $value == 1 || $value == 0;
 
             case 'entity_reference':
-                return !empty($info['entity_type']) && $this->__factory->getInstance($info['entity_type'], $value);
+                return !empty($info['entity_type']) && $this->factory->getInstance($info['entity_type'], $value);
 
             case 'json':
                 return true;
@@ -186,19 +195,24 @@ class Entity {
     }
 
     function load($id) {
-        $entity_type = db_real_escape_string($this->__entityTypeKey);
+        $entity_type = db_escape($this->entityTypeKey);
         if (!($q = db_query('SELECT * FROM `redcap_entity_' . $entity_type . '` WHERE id = "' . intval($id) . '"')) || !db_num_rows($q)) {
             return false;
         }
 
         $result = db_fetch_assoc($q);
+
+        $this->id = $id;
+        $this->created = $result['created'];
+        $this->updated = $result['updated'];
+
         foreach ($result as $key => $value) {
-            if (property_exists($this, $key)) {
-                $this->{$key} = $value;
+            if (array_key_exists($key, $this->data)) {
+                $this->data[$key] = $value;
             }
         }
 
-        $this->__oldData = $this->getData();
+        $this->oldData = $this->data;
         return true;
     }
 
@@ -211,24 +225,26 @@ class Entity {
             return false;
         }
 
-        if (!isset($this->__entityTypeInfo['special_keys']['label'])) {
+        if (!isset($this->entityTypeInfo['special_keys']['label'])) {
             return '#' . $this->id;
         }
 
-        return $this->{$this->__entityTypeInfo['special_keys']['label']};
+        return $this->data[$this->entityTypeInfo['special_keys']['label']];
+    }
+
+    function getCreationTimestamp() {
+        return $this->created;
+    }
+
+    function getLastUpdateTimestamp() {
+        return $this->updated;
     }
 
     function getData() {
         $data = [];
-        foreach (get_object_vars($this) as $key => $value) {
-            if (!in_array($key, ['id', 'created', 'updated'])) {
-                if (!isset($this->__entityTypeInfo['properties'][$key])) {
-                    continue;
-                }
-
-                if ($this->__entityTypeInfo['properties'][$key]['type'] == 'json' && is_string($value)) {
-                    $value = json_decode($value);
-                }
+        foreach ($this->data as $key => $value) {
+            if ($this->entityTypeInfo['properties'][$key]['type'] == 'json' && is_string($value)) {
+                $value = json_decode($value);
             }
 
             $data[$key] = $value;
@@ -238,62 +254,58 @@ class Entity {
     }
 
     function getFactory() {
-        return $this->__factory;
+        return $this->factory;
     }
 
     function getEntityTypeInfo() {
-        return $this->__entityTypeInfo;
+        return $this->entityTypeInfo;
     }
 
     function getErrors() {
-        return $this->__errors;
+        return $this->errors;
     }
 
-    function save($message = '') {
-        $data = $this->getData();
-        $data['updated'] = strtotime(NOW);
+    function save() {
+        // The entity requires a successfull setData() call before saving.
+        if (!isset($this->errors) || !empty($this->errors)) {
+            return false;
+        }
 
-        $entity_type = db_real_escape_string($this->__entityTypeKey);
-        if ($id = $data['id']) {
-            $diff = [];
-            foreach ($data as $key => $value) {
-                if ($value !== $this->__oldData[$key]) {
-                    $diff[$key] = $value;
+        $row = ['updated' => strtotime(NOW)];
+        $entity_type = db_escape($this->entityTypeKey);
+
+        if ($this->id) {
+            foreach ($this->data as $key => $value) {
+                if ($value !== $this->oldData[$key]) {
+                    $row[$key] = $value;
                 }
             }
 
-            if (empty($diff)) {
-                return true;
-            }
-
-            $data = $diff;
             $diff = [];
-            foreach ($this->_formatQueryValues($data) as $key => $value) {
+            foreach ($this->_formatQueryValues($row) as $key => $value) {
                 $diff[] = $key . ' = ' . $value;
             }
 
-            if (!db_query('UPDATE `redcap_entity_' . $entity_type . '` SET ' . implode(', ', $diff) . ' WHERE id = "' . intval($id) . '"')) {
+            if (!db_query('UPDATE `redcap_entity_' . $entity_type . '` SET ' . implode(', ', $diff) . ' WHERE id = "' . intval($this->id) . '"')) {
                 return false;
             }
-
-            $event_type = 'update';
         }
         else {
-            unset($data['id']);
-            $data['created'] = $data['updated'];
+            $row['created'] = $row['updated'];
+            $row += $this->data;
 
             foreach (['author' => 'USERID', 'project' => 'PROJECT_ID'] as $key => $const) {
-                if (defined($const) && isset($this->__entityTypeInfo['special_keys'][$key])) {
-                    $key = $this->__entityTypeInfo['special_keys'][$key];
+                if (defined($const) && isset($this->entityTypeInfo['special_keys'][$key])) {
+                    $key = $this->entityTypeInfo['special_keys'][$key];
 
-                    if (empty($data[$key])) {
-                        $data[$key] = constant($const);
+                    if (empty($row[$key])) {
+                        $row[$key] = constant($const);
                     }
                 }
             }
 
-            $keys = implode(', ', array_keys($data));
-            $values = implode(', ', $this->_formatQueryValues($data));
+            $keys = implode(', ', array_keys($row));
+            $values = implode(', ', $this->_formatQueryValues($row));
 
             if (!db_query('INSERT INTO `redcap_entity_' . $entity_type . '` (' . $keys . ') VALUES (' . $values . ')')) {
                 return false;
@@ -301,23 +313,12 @@ class Entity {
 
             $this->id = db_insert_id();
             $this->created = $data['created'];
-
-            $event_type = 'create';
         }
 
         $this->updated = $data['updated'];
+        $this->oldData = $this->data;
 
         return $this->id;
-    }
-
-    protected function _removeBasicProperties($data) {
-        // Removing elementary properties, to make sure only this base class
-        // can manipulate them.
-        foreach (array_keys(get_class_vars(__CLASS__)) as $key) {
-            unset($data[$key]);
-        }
-
-        return $data;
     }
 
     protected function _formatQueryValues($data) {
@@ -334,7 +335,7 @@ class Entity {
                     $value = json_encode($value);
                 }
 
-                $value = '"' . db_real_escape_string($value) . '"';
+                $value = '"' . db_escape($value) . '"';
             }
 
             $formatted[$key] = $value;
