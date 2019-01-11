@@ -1,4 +1,4 @@
-<div id="redcap-entity-list" class="table-responsive">
+<div id="<?php echo REDCap::escapeHtml($id); ?>" class="table-responsive<?php echo empty($class) ? '' : ' ' . REDCap::escapeHtml($class); ?>">
     <div class="table-responsive">
         <table class="table table-striped">
             <thead>
@@ -9,13 +9,14 @@
                 </tr>
             </thead>
             <?php
-                foreach ($rows as $id => $row) {
-                    $output = '';
+                foreach ($rows as $key => $row) {
+                    $values = '';
+
                     foreach ($row as $value) {
-                         $output .= RCView::td([], $value);
+                        $values .= RCView::td([], $value);
                     }
 
-                    echo RCView::tr($rows_attributes[$id], $output);
+                    echo RCView::tr(isset($rows_attributes[$key]) ? $rows_attributes[$key] : [], $values);
                 }
             ?>
         </table>

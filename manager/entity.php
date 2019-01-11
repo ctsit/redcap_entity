@@ -17,21 +17,11 @@ if (!$info = $factory->getEntityTypeInfo($entity_type)) {
 $entity_id = isset($_GET['entity_id']) ? $_GET['entity_id'] : null;
 
 if (!empty($_GET['__delete'])) {
-    if (!$entity_id || !in_array('delete', $info['operations'])) {
+    if (!$entity_id) {
         redirect(APP_PATH_WEBROOT_PARENT);
     }
 
     $class = 'REDCapEntity\EntityDeleteForm';
-}
-elseif ($entity_id) {
-    if (!in_array('update', $info['operations'])) {
-        redirect(APP_PATH_WEBROOT_PARENT);
-    }
-
-    $entity_id = $_GET['entity_id'];
-}
-elseif (!in_array('create', $info['operations'])) {
-    redirect(APP_PATH_WEBROOT_PARENT);
 }
 
 try {
