@@ -158,7 +158,7 @@ class Entity {
                     return false;
                 }
 
-                return !defined('USERID') || UserRights::getPrivileges($value, USERID);
+                return !defined('USERID') || SUPER_USER || ACCOUNT_MANAGER || UserRights::getPrivileges($value, USERID);
 
             case 'long_text':
                 return is_string($value);
