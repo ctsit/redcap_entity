@@ -1,4 +1,7 @@
 # REDCap Entity
+
+[![DOI](https://zenodo.org/badge/137758590.svg)](https://zenodo.org/badge/latestdoi/137758590)
+
 Provides features to design, store and manage custom entities in REDCap.
 
 ## Prerequisites
