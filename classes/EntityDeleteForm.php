@@ -8,6 +8,7 @@ use REDCapEntity\Entity;
 use REDCapEntity\StatusMessageQueue;
 
 class EntityDeleteForm extends Page {
+    use EntityFormTrait;
 
     protected $entity;
     protected $entityTypeInfo;

@@ -25,6 +25,10 @@ if (!empty($_GET['term'])) {
     }
 }
 
+if (defined('PROJECT_ID') && !empty($info['special_keys']['project'])) {
+    $query->condition($info['special_keys']['project'], PROJECT_ID);
+}
+
 if (!$entities = $query->execute(true, false)) {
     exit;
 }

@@ -1,3 +1,11 @@
 #entity-form {
     margin-top: 20px;
 }
+
+#redcap-entity-error-list {
+    margin-bottom: 0;
+}
+
+[id^="redcap-entity-error-"] img {
+    display: none;
+}

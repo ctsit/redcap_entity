@@ -11,6 +11,7 @@ use ToDoList;
 use User;
 
 class EntityForm extends Page {
+    use EntityFormTrait;
 
     protected $entity;
     protected $entityTypeInfo;
@@ -28,6 +29,17 @@ class EntityForm extends Page {
 
     protected function buildFieldsInfo() {
         $this->fields = $this->entityTypeInfo['properties'];
+
+        $keys = ['author'];
+        if (defined('PROJECT_ID')) {
+            $keys[] = 'project';
+        }
+
+        foreach ($keys as $key) {
+            if (!empty($this->entityTypeInfo['special_keys'][$key])) {
+                unset($this->fields[$this->entityTypeInfo['special_keys'][$key]]);
+            }
+        }
     }
 
     protected function getSubmitLabel() {
@@ -55,6 +67,11 @@ class EntityForm extends Page {
 
         $this->jsFiles[] = ExternalModules::$BASE_URL . 'manager/js/select2.js';
         $this->jsFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/js/entity_fields.js');
+
+        $this->jsSettings['redcapEntity'] = [
+            'entityReferenceUrl' => ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/ajax/entity_reference.php'),
+            'projectReferenceUrl' => ExternalModules::$BASE_URL . 'manager/ajax/get-project-list.php',
+        ];
 
         parent::render($context, $title, $icon);
     }
@@ -87,7 +104,7 @@ class EntityForm extends Page {
     protected function buildFormElements($entity, $entity_type_info, $data) {
         $rows = '';
 
-        foreach ($entity_type_info['properties'] as $key => $info) {
+        foreach ($this->fields as $key => $info) {
             $label = REDCap::escapeHtml($info['name']);
 
             if ($info['type'] == 'entity_reference' && !empty($info['entity_type'])) {
@@ -97,10 +114,6 @@ class EntityForm extends Page {
             }
 
             $data[$key] = REDCap::escapeHtml($data[$key]);
-
-            if (!empty($entity_type_info['special_keys']['uuid']) && $entity_type_info['special_keys']['uuid'] == $key) {
-                continue;
-            }
 
             $attrs = ['name' => $key, 'class' => 'form-control', 'id' => 'redcap-entity-prop-' . $key];
 
@@ -194,22 +207,15 @@ class EntityForm extends Page {
                 }
             }
             else {
-                $attrs['value'] = $data[$key];
-
                 switch ($info['type']) {
                     case 'long_text':
                     case 'json':
-                        $row .= RCView::textarea($attrs);
+                        $row .= RCView::textarea($attrs, $data[$key]);
                         break;
 
-                    case 'price':
-                        $attrs['value'] = number_format($data[$key] / 100, 2);
-
-                        if (empty($info['prefix'])) {
-                            $info['prefix'] = '$';
-                        }
-
                     default:
+                        $attrs['value'] = $data[$key];
+
                         if ($info['type'] == 'date') {
                             if (is_numeric($attrs['value'])) {
                                 $attrs['value'] = date('m/d/Y', $attrs['value']);
@@ -242,12 +248,19 @@ class EntityForm extends Page {
         $this->validate($data, $this->entity, $this->entityTypeInfo);
 
         if (!empty($this->errors)) {
-            $items = '';
-            foreach ($this->errors as $error) {
-                $items .= RCView::li([], $error);
+            if (count($this->errors) == 1) {
+                $message = reset($this->errors);
+            }
+            else {
+                $message = '';
+                foreach ($this->errors as $error) {
+                    $message .= RCView::li([], $error);
+                }
+
+                $message = RCView::ul(['id' => 'redcap-entity-error-list'], $message);
             }
 
-            StatusMessageQueue::enqueue(RCView::ul([], $items), 'error');
+            StatusMessageQueue::enqueue($message, 'error');
         }
         else {
             $label = empty($this->entityTypeInfo['label']) ? 'entity' : $this->entityTypeInfo['label'];
@@ -256,7 +269,7 @@ class EntityForm extends Page {
                 StatusMessageQueue::enqueue($msg, 'error');
             }
             else {
-                StatusMessageQueue::enqueue('The ' . $label . ' has been saved successfully.');
+                StatusMessageQueue::enqueue('The ' . $label . ' has been saved.');
 
                 if (isset($_GET['__return_url'])) {
                     redirect($_GET['__return_url']);
@@ -280,10 +293,9 @@ class EntityForm extends Page {
     }
 
     protected function validate($data, $entity, $entity_type_info) {
-        $elements = $entity_type_info['properties'];
         $filtered = [];
 
-        foreach ($elements as $key => $info) {
+        foreach ($this->fields as $key => $info) {
             if (empty($info['required']) || (isset($data[$key]) && $data[$key] !== '')) {
                 $filtered[$key] = $data[$key];
 
@@ -308,15 +320,15 @@ class EntityForm extends Page {
             $this->errors[$key] = $label . ' is required.';
         }
 
-        if ($invalid_fields = $entity->setData($filtered)) {
-            foreach ($invalid_ields as $key) {
-                $label = empty($elements[$key]['name']) ? $key : $elements[$key]['name'];
+        if (!$entity->setData($filtered)) {
+            foreach ($entity->getErrors() as $key) {
+                $label = empty($this->fields[$key]['name']) ? $key : $this->fields[$key]['name'];
                 $this->errors[$key] = $label . ' is invalid';
             }
         }
     }
 
-    protected function save($entity) {
+    protected function save() {
         return $this->entity->save();
     }
 }
