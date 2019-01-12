@@ -2,6 +2,11 @@
 All notable changes to the REDCap Entity project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.0.1] - 2019-01-12
+### Added
+- Add DOI to README and Developer's Guide (Philip Chase)
+
+
 ## [2.0.0] - 2019-01-12
 ### Changed
 - Fixing permission problem to set project fields. (Tiago Bember Simeao)
