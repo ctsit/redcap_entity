@@ -1,5 +1,8 @@
 # REDCap Entity Developers Guide
-Provides features to design, store and manage custom entities in REDCap.  This document describes how to write modules that user REDCap Entity to create, store, manage and present novel data types in REDCap.
+
+[![DOI](https://zenodo.org/badge/137758590.svg)](https://zenodo.org/badge/latestdoi/137758590)
+
+Provides features to design, store and manage custom entities in REDCap.  This document describes how to write modules that use REDCap Entity to create, store, manage and present novel data types in REDCap.
 
 ## Prerequisites
 
