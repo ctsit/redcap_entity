@@ -229,6 +229,7 @@ The property type specifies the data type, which helps the form builder (see nex
 - `project`
 - `email`
 - `user`
+- `data` (for storage purposes)
 - `entity_reference`: other entities can be referenced via this type, which requires an extra key - `entity_type`, defining the target entity type. Example ("protocol" referencing "study site"):
 
 ```php

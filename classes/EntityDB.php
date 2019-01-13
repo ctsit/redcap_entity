@@ -88,6 +88,10 @@ class EntityDB {
                     $row .= 'TEXT';
                     break;
 
+                case 'data':
+                    $row .= 'MEDIUMTEXT';
+                    break;
+
                 default:
                     return false;
             }

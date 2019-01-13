@@ -299,6 +299,7 @@ class EntityFactory {
             'boolean',
             'json',
             'long_text',
+            'data',
         ];
     }
 }
