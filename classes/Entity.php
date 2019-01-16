@@ -169,6 +169,7 @@ class Entity {
             case 'entity_reference':
                 return !empty($info['entity_type']) && $this->factory->getInstance($info['entity_type'], $value);
 
+            case 'data':
             case 'json':
                 return true;
 

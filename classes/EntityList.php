@@ -174,7 +174,7 @@ class EntityList extends Page {
         }
 
         foreach ($this->exposedFilters as $key) {
-            if (isset($fields[$key]) && !in_array($fields[$key]['type'], ['json', 'date'])) {
+            if (isset($fields[$key]) && !in_array($fields[$key]['type'], ['json', 'date', 'data'])) {
                 $filters[$key] = $fields[$key];
             }
         }
@@ -561,7 +561,7 @@ class EntityList extends Page {
                 continue;
             }
 
-            if (!in_array($fields[$key]['type'], ['json', 'long_text'])) {
+            if (!in_array($fields[$key]['type'], ['json', 'long_text', 'data'])) {
                 $labels[$key] = $fields[$key]['name'];
             }
         }

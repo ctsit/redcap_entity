@@ -105,6 +105,10 @@ class EntityForm extends Page {
         $rows = '';
 
         foreach ($this->fields as $key => $info) {
+            if ($info['type'] == 'data') {
+                continue;
+            }
+
             $label = REDCap::escapeHtml($info['name']);
 
             if ($info['type'] == 'entity_reference' && !empty($info['entity_type'])) {
