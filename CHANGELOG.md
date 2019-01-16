@@ -2,6 +2,12 @@
 All notable changes to the REDCap Entity project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+
+## [2.1.0] - 2019-01-16
+### Added
+- Add "data" property type to address needs of `redcap_oncore_client` (Tiago Bember Simeao)
+
+
 ## [2.0.1] - 2019-01-12
 ### Added
 - Add DOI to README and Developer's Guide (Philip Chase)
