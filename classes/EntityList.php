@@ -201,10 +201,10 @@ class EntityList extends Page {
 
         foreach ($filters as $key => $info) {
             $label = REDCap::escapeHtml($info['name']);
-            $value = isset($_GET[$key]) ? trim($_GET[$key]) : '';
+            $value = isset($_GET['_' . $key]) ? trim($_GET['_' . $key]) : '';
 
             $attrs = [
-                'name' => $key,
+                'name' => '_' . $key,
                 'id' => 'redcap-entity-filter-' . $key,
                 'class' => 'form-control form-control-sm',
             ];
@@ -646,13 +646,13 @@ class EntityList extends Page {
         $query = $this->entityFactory->query($this->entityTypeKey);
 
         foreach ($this->getExposedFilters() as $key => $info) {
-            if (!isset($_GET[$key]) || $_GET[$key] === '') {
+            if (!isset($_GET['_' . $key]) || $_GET['_' . $key] === '') {
                 continue;
             }
 
             $op = '=';
             $field = empty($info['sql_field']) ? $key : $info['sql_field'];
-            $value = trim($_GET[$key]);
+            $value = trim($_GET['_' . $key]);
 
             if ($info['type'] = 'text' && empty($info['choices']) && empty($info['choices_callback'])) {
                 $op = 'LIKE';
