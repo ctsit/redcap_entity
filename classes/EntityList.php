@@ -173,8 +173,13 @@ class EntityList extends Page {
             $this->exposedFilters = $this->cols;
         }
 
+        $project_key = '';
+        if (isset($this->entityTypeInfo['special_keys']['project']) && defined('PROJECT_ID')) {
+            $project_key = $this->entityTypeInfo['special_keys']['project'];
+        }
+
         foreach ($this->exposedFilters as $key) {
-            if (isset($fields[$key]) && !in_array($fields[$key]['type'], ['json', 'date', 'data'])) {
+            if (isset($fields[$key]) && !in_array($fields[$key]['type'], ['json', 'date', 'data']) && $key != $project_key) {
                 $filters[$key] = $fields[$key];
             }
         }
