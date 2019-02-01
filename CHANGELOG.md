@@ -4,7 +4,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 
 ## [2.1.2] - 2019-02-01
-### Added
+### Changed
 - Removing project exposed filter for project contextualized lists. (Tiago Bember Simeao)
 
 
