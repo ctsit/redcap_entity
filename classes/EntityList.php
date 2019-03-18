@@ -377,7 +377,7 @@ class EntityList extends Page {
             $query->orderBy($sorting_field, !empty($_GET['__desc']));
         }
         else {
-            $query->orderBy('e.updated', true);
+            $query->orderBy('e.updated', true)->orderBy('e.id', true);
         }
 
         if (!$entities = $query->execute()) {
