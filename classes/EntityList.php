@@ -319,6 +319,7 @@ class EntityList extends Page {
 
             if (!empty($op['btn_color'])) {
                 $btn_classes = [
+                    'blue' => 'primary',
                     'green' => 'success',
                     'yellow' => 'warning',
                     'red' => 'danger',
