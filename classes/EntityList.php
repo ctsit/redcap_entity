@@ -334,16 +334,17 @@ class EntityList extends Page {
                 }
             }
 
+            $name = REDCap::escapeHtml($key);
             $btns .= RCView::button([
-                'name' => REDCap::escapeHtml($key),
+                'name' => $name,
                 'data-toggle' => 'modal',
-                'data-target' => '#redcap-entity-bulk-operation-modal',
+                'data-target' => '#redcap-entity-bulk-operation-modal-' . $name,
                 'class' => 'btn btn-' . $btn_class . ' bulk-operation',
                 'disabled' => true,
             ], REDCap::escapeHtml($op['label']));
 
             $this->loadTemplate('modal', [
-                'id' => 'redcap-entity-bulk-operation-modal',
+                'id' => 'redcap-entity-bulk-operation-modal-' . $name,
                 'confirm_btn' => [
                     'title' => $op['label'],
                     'attrs' => [
