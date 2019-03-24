@@ -25,6 +25,7 @@ class StatusMessageQueue {
 
         $styles = [
             'error' => ['icon' => 'exclamation', 'color' => 'red'],
+            'warning' => ['icon' => 'exclamation_orange', 'color' => 'yellow'],
             'success' => ['icon' => 'tick', 'color' => 'green'],
         ];
 
