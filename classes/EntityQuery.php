@@ -9,8 +9,7 @@ class EntityQuery {
     protected $entityFactory;
     protected $joins = [];
     protected $expressions = ['e.id'];
-    protected $orderBy = 'e.id';
-    protected $desc = true;
+    protected $orderBy = [];
     protected $limit = 0;
     protected $offset = 0;
     protected $countQuery = 0;
@@ -26,10 +25,13 @@ class EntityQuery {
     }
 
     function addExpression($expr, $alias) {
+        $this->_checkAlias($alias);
         $this->expressions[] = $expr . ' ' . $alias;
+        return $this;
     }
 
     function condition($field, $value, $op = '=') {
+        $this->_checkField($field);
         $cond = $field . ' ';
 
         if (is_array($value)) {
@@ -47,7 +49,7 @@ class EntityQuery {
             }
 
             if (!in_array(strtoupper($op), ['=', '>', '<', '<=', '>=', '<>', '!=', 'LIKE'])) {
-                $op = '=';
+                throw new Exception('Invalid operator.');
             }
 
             $cond .= $op . ' ' . $value;
@@ -59,22 +61,29 @@ class EntityQuery {
 
     function join($table, $alias, $expr, $type = 'INNER') {
         if (!in_array(strtoupper($type), ['INNER', 'LEFT', 'RIGHT', 'OUTER FULL'])) {
-            return;
+            throw new Exception('Invalid join type.');
         }
+
+        $this->_checkAlias($alias);
+        $this->_checkAlias($table, 'Invalid table.');
 
         $this->joins[] = $type . ' JOIN ' . $table . ' ' . $alias . ' ON ' . $expr;
         return $this;
     }
 
     function orderBy($field, $desc = false) {
-        $this->orderBy = $field;
-        $this->desc = !empty($desc);
+        $this->_checkField($field);
+        $this->orderBy[] = $field . (empty($desc) ? '' : ' DESC');
         return $this;
     }
 
     function limit($limit, $offset = 0) {
-        if (intval($limit) != $limit || $limit < 0 || intval($offset) != $offset || $offset < 0) {
-            return;
+        if (intval($limit) != $limit || $limit < 0) {
+            throw new Exception('Invalid limit.');
+        }
+
+        if (intval($offset) != $offset || $offset < 0) {
+            throw new Exception('Invalid offset.');
         }
 
         $this->limit = $limit;
@@ -98,11 +107,8 @@ class EntityQuery {
             $sql .= ' WHERE ' . implode($glue, $this->conditions);
         }
 
-        if (!$this->countQuery) {
-            $sql .= ' ORDER BY ' . $this->orderBy;
-            if ($this->desc) {
-                $sql .= ' DESC';
-            }
+        if (!$this->countQuery && !empty($this->orderBy)) {
+            $sql .= ' ORDER BY ' . implode(', ', $this->orderBy);
         }
 
         if ($this->limit) {
@@ -139,5 +145,17 @@ class EntityQuery {
 
     function getRawResults() {
         return $this->rawResults;
+    }
+
+    protected function _checkAlias($alias, $msg = 'Invalid alias.') {
+        if (preg_match('/[^a-z0-9_]+/', $alias)) {
+            throw new Exception($msg);
+        }
+    }
+
+    protected function _checkField($field) {
+        if (preg_match('/[^a-z0-9\._]+/', $field)) {
+            throw new Exception('Invalid field.');
+        }
     }
 }
