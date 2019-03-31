@@ -8,7 +8,7 @@ class EntityQuery {
     protected $entityType;
     protected $entityFactory;
     protected $joins = [];
-    protected $expressions = ['e.id'];
+    protected $fields = ['e.id'];
     protected $orderBy = [];
     protected $limit = 0;
     protected $offset = 0;
@@ -24,15 +24,14 @@ class EntityQuery {
         $this->entityFactory = $entity_factory;
     }
 
-    function addExpression($expr, $alias) {
+    function addField($expr, $alias) {
         $this->_checkAlias($alias);
-        $this->expressions[] = $expr . ' ' . $alias;
+        $this->fields[] = $expr . ' ' . $alias;
         return $this;
     }
 
-    function condition($field, $value, $op = '=') {
-        $this->_checkField($field);
-        $cond = $field . ' ';
+    function condition($expr, $value, $op = '=') {
+        $cond = $expr . ' ';
 
         if (is_array($value)) {
             $cond .= 'IN ("' . implode('", "', array_map('db_escape', $value)) . '")';
@@ -71,9 +70,8 @@ class EntityQuery {
         return $this;
     }
 
-    function orderBy($field, $desc = false) {
-        $this->_checkField($field);
-        $this->orderBy[] = $field . (empty($desc) ? '' : ' DESC');
+    function orderBy($expr, $desc = false) {
+        $this->orderBy[] = $expr . (empty($desc) ? '' : ' DESC');
         return $this;
     }
 
@@ -100,7 +98,7 @@ class EntityQuery {
         $glue = $require_all_conds ? ' AND ' : ' OR ';
         $entity_type = db_escape($this->entityType);
 
-        $select =  $this->countQuery ? 'COUNT(e.id) count' : implode(', ', $this->expressions);
+        $select =  $this->countQuery ? 'COUNT(e.id) __count' : implode(', ', $this->fields);
         $sql = 'SELECT ' . $select . ' FROM redcap_entity_' . $entity_type . ' e ' . implode(' ', $this->joins);
 
         if (!empty($this->conditions)) {
@@ -127,7 +125,7 @@ class EntityQuery {
 
         if ($this->countQuery) {
             $count = db_fetch_assoc($q);
-            return $count['count'];
+            return $count['__count'];
         }
 
         $ids = [];
@@ -150,12 +148,6 @@ class EntityQuery {
     protected function _checkAlias($alias, $msg = 'Invalid alias.') {
         if (preg_match('/[^a-z0-9_]+/', $alias)) {
             throw new Exception($msg);
-        }
-    }
-
-    protected function _checkField($field) {
-        if (preg_match('/[^a-z0-9\._]+/', $field)) {
-            throw new Exception('Invalid field.');
         }
     }
 }

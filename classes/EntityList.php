@@ -671,7 +671,7 @@ class EntityList extends Page {
 
         foreach ($this->getFields() as $key => $info) {
             if (!empty($info['sql_field'])) {
-                $query->addExpression($info['sql_field'], 'alias__' . $key);
+                $query->addField($info['sql_field'], 'alias__' . $key);
             }
         }
 
