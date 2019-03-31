@@ -41,7 +41,7 @@ Tables creation/removal can be managed via an [UI provided by this module](#alte
 
 The next sections will walk you through the process of designing and managing your entities.
 
-**Important:** all code examples to be explored have been wrapped up and placed at [examples/protocols_basic_v0.0.0](examples/protocols_basic_v0.0.0) and [examples/protocols_advanced_v0.0.0](examples/protocols_advanced_v0.0.0) folders, which are external modules that can be used as templates to develop your own entities.
+**Important:** all code examples to be explored have been wrapped up and placed at [`examples/protocols_basic_v0.0.0`](examples/protocols_basic_v0.0.0) and [`examples/protocols_advanced_v0.0.0`](examples/protocols_advanced_v0.0.0) folders, which are external modules that can be used as templates to develop your own entities.
 
 ## Setting up entity types
 
@@ -69,7 +69,7 @@ config.json
 Obs.: if you are not familiar with External Modules development, check [this documentation](https://github.com/vanderbilt/redcap-external-modules).
 
 
-### Step 2. Implement redcap_entity_types()
+### Step 2. Implement `redcap_entity_types()`
 
 Your entity type is defined on `redcap_entity_types` hook. There, you essentially specify:
 
@@ -258,7 +258,7 @@ If your property needs to be presented as a list of options, you may set `choice
 ],
 ```
 
-Alternatively, you can set `choices_callback`, a setting that expects a callable string (i.e. function name, class method, etc.) that returns the same `choices` structure. There are 2 types of lists: "dropdown" and "radios", which can be set via `choices_type` (if blank, "dropdown" is set). Example:
+Alternatively, you can set `choices_callback`, a setting that expects a callable string (i.e. function name, class method, etc.) that returns the same `choices` structure. There are 2 types of lists: "dropdown" and "radios", which can be set via `choices_type`. `choices_type` works with both `choices` and `choices_callback`.  If `choices_type` is left blank, "dropdown" is set. Example:
 
 ```php
 <?php
@@ -271,7 +271,7 @@ Alternatively, you can set `choices_callback`, a setting that expects a callable
 ],
 ```
 
-Use `default` to set a default value to your property. Example:
+Use `default` to set a default value to your property. Reference the default value by the choices key. Example:
 
 ```php
 <?php
@@ -294,9 +294,9 @@ This setting is used to add semantics to your properties, i.e. you are telling R
 
 - `label`: Use this setting if a property represents the label of your entity (e.g. Name, Title, etc). If not set, REDCap Entity takes the internal (auto-incremented) ID as the default label.
 - `project`: Use this setting if a property represents the project ID that your entity belongs to. By doing that, a few features are enabled:
-  - when the entity is created, the property is automatically populated with the current project ID
-  - an entity that belongs to project A cannot be accessed by project B, and vice-versa
-- `author`: Use this setting to tell REDCap Entity that the given property should store the content author. By doing that, the field is automatically filled with the current user on entity creation.
+  - When the entity is created, the property is automatically populated with the current project ID.
+  - An entity that belongs to project *A* cannot be accessed by project *B*, and vice-versa.
+- `author`: Use this setting to tell REDCap Entity that the given property should store the content author. By doing that, the field is automatically filled with the current user's username on entity creation.
 
 Extracted from Protocol example:
 
@@ -380,9 +380,10 @@ So far we have covered the data structure design and the storage method. Let's n
 
 #### Step 4.1. Defining links on config.json
 
-Let's create 2 page links: one for study sites (to be accessible via Control Center) and other one for protocols (available only within projects):
+Let's create 2 page links: one for study sites (to be accessible via Control Center) and another one for protocols (available only within projects):
 
 config.json
+
 ```
 "links": {
     "control-center": [
@@ -656,11 +657,11 @@ $types['protocol'] = [
 
 `ProtocolForm` customizes the default protocol form as follows:
 
-- Changes submit button text to "Submit Protocol"
-- Adds a helper text at the top of the form
-- Sets "Title" as the 1st field
-- Adds a CSS file that turns all fields labels into bold
-- Adds a JS file that locks "Number" to be changed after the protocol is created
+- Changes submit button text to "Submit Protocol".
+- Adds a helper text at the top of the form.
+- Sets "Title" as the 1st field.
+- Adds a CSS file that turns all fields labels into bold.
+- Adds a JS file that makes "Number" read-only after the protocol is created.
 
 classes/ProtocolForm.php
 
