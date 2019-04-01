@@ -86,6 +86,14 @@ class EntityForm extends Page {
         }
         else {
             $data = $this->entity->getData();
+
+            if ($this->type == 'create') {
+                foreach ($data as $key => $value) {
+                    if (isset($this->entityTypeInfo['properties'][$key]['default'])) {
+                        $data[$key] = $this->entityTypeInfo['properties'][$key]['default'];
+                    }
+                }
+            }
         }
 
         $output = $this->buildFormElements($this->entity, $this->entityTypeInfo, $data);
@@ -286,12 +294,6 @@ class EntityForm extends Page {
                 ];
 
                 redirect($this->formUrl . '&' . http_build_query($args));
-            }
-        }
-
-        foreach ($data as $key => $value) {
-            if (isset($this->entityTypeInfo['properties'][$key])) {
-                $this->entityTypeInfo['properties'][$key]['default'] = $value;
             }
         }
     }

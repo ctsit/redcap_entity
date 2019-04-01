@@ -57,19 +57,19 @@ class EntityFactory {
         }
 
         foreach ($module->redcap_entity_types() as $type => $info) {
-            $info['__pendencies'] = [];
+            $info['__issues'] = [];
 
             if (preg_match('/[^a-zA-Z0-9_]+/', $type) === 1) {
-                $info['__pendencies'][] = 'The entity type identifier is invalid. Only alphanumeric and underscore characters are allowed.';
+                $info['__issues'][] = 'The entity type identifier is invalid. Only alphanumeric and underscore characters are allowed.';
             }
 
             if (strlen($type) > 50) {
-                $info['__pendencies'][] = 'The entity type identifier length exceeded the limit of 50 characters.';
+                $info['__issues'][] = 'The entity type identifier length exceeded the limit of 50 characters.';
             }
 
             foreach (['label' => 'Label is missing.', 'properties' => 'Properties are missing.'] as $key => $msg) {
                 if (empty($info[$key])) {
-                    $info['__pendencies'][] = $msg;
+                    $info['__issues'][] = $msg;
                 }
             }
 
@@ -82,16 +82,16 @@ class EntityFactory {
                     require_once $path;
                 }
                 else {
-                    $info['__pendencies'][] = 'Class file "' . $path .  '" does not exist.';
+                    $info['__issues'][] = 'Class file "' . $path .  '" does not exist.';
                 }
             }
 
             if (isset($info['class']['name'])) {
                 if (!class_exists($info['class']['name'])) {
-                    $info['__pendencies'][] = 'Class "' . $info['class']['name'] .  '" could not be found.';
+                    $info['__issues'][] = 'Class "' . $info['class']['name'] .  '" could not be found.';
                 }
                 elseif (!is_subclass_of($info['class']['name'], 'REDCapEntity\Entity')) {
-                    $info['__pendencies'][] = 'Class "' . $info['class']['name'] .  '" does not implement EntityInterface.';
+                    $info['__issues'][] = 'Class "' . $info['class']['name'] .  '" does not implement EntityInterface.';
                 }
                 else {
                     $class = $info['class']['name'];
@@ -101,12 +101,12 @@ class EntityFactory {
             $info['class'] = $class;
 
             if (!is_array($info['properties'])) {
-                $info['__pendencies'][] = 'Invalid properties list.';
+                $info['__issues'][] = 'Invalid properties list.';
             }
             else {
                 foreach ($info['properties'] as $key => $property_info) {
                     if (empty($property_info['type']) || !in_array(strtolower($property_info['type']), $valid_property_types)) {
-                        $info['__pendencies'][] = 'Invalid property type for "' . $key . '".';
+                        $info['__issues'][] = 'Invalid property type for "' . $key . '".';
                     }
                 }
             }
@@ -122,7 +122,7 @@ class EntityFactory {
 
             $info['module'] = $module->PREFIX;
 
-            if (!empty($info['__pendencies'])) {
+            if (!empty($info['__issues'])) {
                 $info['status'] = ENTITY_TYPE_INVALID;
             }
             elseif (EntityDB::checkEntityDBTable($type)) {

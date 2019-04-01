@@ -3,8 +3,22 @@ All notable changes to the REDCap Entity project will be documented in this file
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 
-## [2.1.2] - 2019-02-01
+## [2.2.0] - 2019-03-31
+### Changed
+- Replacing __pendencies with __issues (Tiago Bember Simeao)
+- Fixing property 'default' value feature. (Tiago Bember Simeao)
+- Fixing bulk operation modal rendering. (Tiago Bember Simeao)
+
 ### Added
+- Finishing up developers documentation (Tiago Bember Simeao)
+- Adding advanced protocol example module (Tiago Bember Simeao)
+- Adding 'warning' icon handling on StatusMessageQueue (Tiago Bember Simeao)
+- Allowing multiple orderBy statements on EntityQuery (Tiago Bember Simeao)
+- Adding missing color option for bulk operation button (Tiago Bember Simeao)
+
+
+## [2.1.2] - 2019-02-01
+### Changed
 - Removing project exposed filter for project contextualized lists. (Tiago Bember Simeao)
 
 

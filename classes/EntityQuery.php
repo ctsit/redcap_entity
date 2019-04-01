@@ -8,9 +8,8 @@ class EntityQuery {
     protected $entityType;
     protected $entityFactory;
     protected $joins = [];
-    protected $expressions = ['e.id'];
-    protected $orderBy = 'e.id';
-    protected $desc = true;
+    protected $fields = ['e.id'];
+    protected $orderBy = [];
     protected $limit = 0;
     protected $offset = 0;
     protected $countQuery = 0;
@@ -25,12 +24,14 @@ class EntityQuery {
         $this->entityFactory = $entity_factory;
     }
 
-    function addExpression($expr, $alias) {
-        $this->expressions[] = $expr . ' ' . $alias;
+    function addField($expr, $alias) {
+        $this->_checkAlias($alias);
+        $this->fields[] = $expr . ' ' . $alias;
+        return $this;
     }
 
-    function condition($field, $value, $op = '=') {
-        $cond = $field . ' ';
+    function condition($expr, $value, $op = '=') {
+        $cond = $expr . ' ';
 
         if (is_array($value)) {
             $cond .= 'IN ("' . implode('", "', array_map('db_escape', $value)) . '")';
@@ -47,7 +48,7 @@ class EntityQuery {
             }
 
             if (!in_array(strtoupper($op), ['=', '>', '<', '<=', '>=', '<>', '!=', 'LIKE'])) {
-                $op = '=';
+                throw new Exception('Invalid operator.');
             }
 
             $cond .= $op . ' ' . $value;
@@ -59,22 +60,28 @@ class EntityQuery {
 
     function join($table, $alias, $expr, $type = 'INNER') {
         if (!in_array(strtoupper($type), ['INNER', 'LEFT', 'RIGHT', 'OUTER FULL'])) {
-            return;
+            throw new Exception('Invalid join type.');
         }
+
+        $this->_checkAlias($alias);
+        $this->_checkAlias($table, 'Invalid table.');
 
         $this->joins[] = $type . ' JOIN ' . $table . ' ' . $alias . ' ON ' . $expr;
         return $this;
     }
 
-    function orderBy($field, $desc = false) {
-        $this->orderBy = $field;
-        $this->desc = !empty($desc);
+    function orderBy($expr, $desc = false) {
+        $this->orderBy[] = $expr . (empty($desc) ? '' : ' DESC');
         return $this;
     }
 
     function limit($limit, $offset = 0) {
-        if (intval($limit) != $limit || $limit < 0 || intval($offset) != $offset || $offset < 0) {
-            return;
+        if (intval($limit) != $limit || $limit < 0) {
+            throw new Exception('Invalid limit.');
+        }
+
+        if (intval($offset) != $offset || $offset < 0) {
+            throw new Exception('Invalid offset.');
         }
 
         $this->limit = $limit;
@@ -91,18 +98,15 @@ class EntityQuery {
         $glue = $require_all_conds ? ' AND ' : ' OR ';
         $entity_type = db_escape($this->entityType);
 
-        $select =  $this->countQuery ? 'COUNT(e.id) count' : implode(', ', $this->expressions);
+        $select =  $this->countQuery ? 'COUNT(e.id) __count' : implode(', ', $this->fields);
         $sql = 'SELECT ' . $select . ' FROM redcap_entity_' . $entity_type . ' e ' . implode(' ', $this->joins);
 
         if (!empty($this->conditions)) {
             $sql .= ' WHERE ' . implode($glue, $this->conditions);
         }
 
-        if (!$this->countQuery) {
-            $sql .= ' ORDER BY ' . $this->orderBy;
-            if ($this->desc) {
-                $sql .= ' DESC';
-            }
+        if (!$this->countQuery && !empty($this->orderBy)) {
+            $sql .= ' ORDER BY ' . implode(', ', $this->orderBy);
         }
 
         if ($this->limit) {
@@ -121,7 +125,7 @@ class EntityQuery {
 
         if ($this->countQuery) {
             $count = db_fetch_assoc($q);
-            return $count['count'];
+            return $count['__count'];
         }
 
         $ids = [];
@@ -139,5 +143,11 @@ class EntityQuery {
 
     function getRawResults() {
         return $this->rawResults;
+    }
+
+    protected function _checkAlias($alias, $msg = 'Invalid alias.') {
+        if (preg_match('/[^a-z0-9_]+/', $alias)) {
+            throw new Exception($msg);
+        }
     }
 }

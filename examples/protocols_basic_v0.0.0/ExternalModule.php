@@ -7,7 +7,6 @@
 namespace Protocols\ExternalModule;
 
 use ExternalModules\AbstractExternalModule;
-use REDCapEntity\EntityDB;
 
 /**
  * ExternalModule class for Protocols module.
@@ -27,18 +26,22 @@ class ExternalModule extends AbstractExternalModule {
                     'type' => 'text',
                     'required' => true,
                 ],
-                'project_id' => [
-                    'name' => 'Project ID',
-                    'type' => 'project',
+                'address' => [
+                    'name' => 'Address',
+                    'type' => 'long_text',
+                    'required' => true,
+                ],
+                'contact_email' => [
+                    'name' => 'Contact email',
+                    'type' => 'email',
                     'required' => true,
                 ],
             ],
             'special_keys' => [
-                'label' => 'name',
-                'project' => 'project_id',
+                'label' => 'name', // "name" represents the entity label.
             ],
         ];
-    
+
         $types['protocol'] = [
             'label' => 'Protocol',
             'label_plural' => 'Protocols',
@@ -57,6 +60,7 @@ class ExternalModule extends AbstractExternalModule {
                 'status' => [
                     'name' => 'Status',
                     'type' => 'text',
+                    'default' => 'in_study',
                     'choices' => [
                         'in_study' => 'In Study',
                         'pending' => 'Pending',
@@ -85,16 +89,12 @@ class ExternalModule extends AbstractExternalModule {
                 ],
             ],
             'special_keys' => [
-                'label' => 'number',
-                'project' => 'project_id',
-                'author' => 'created_by',
+                'label' => 'number', // "number" represents the entity label.
+                'project' => 'project_id', // "project_id" represents the project which the entity belongs to.
+                'author' => 'created_by', // "created_by" represents the entity author's username.
             ],
         ];
 
         return $types;
     }
-
-	function redcap_module_system_enable($version) {
-		EntityDB::buildSchema($this->PREFIX);
-	}
 }

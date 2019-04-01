@@ -2,9 +2,6 @@
     "name": "Protocols",
     "namespace": "Protocols\\ExternalModule",
     "description": "Manage clinical research protocols.",
-    "permissions": [
-        "redcap_module_system_enable"
-    ],
     "authors": [
         {
             "name": "Tiago Bember",
@@ -13,12 +10,14 @@
         }
     ],
     "links": {
-        "project": [
+        "control-center": [
             {
                 "name": "Study sites",
                 "icon": "home_pencil",
                 "url": "plugins/study-sites.php"
-            },
+            }
+        ],
+        "project": [
             {
                 "name": "Protocols",
                 "icon": "codebook",
