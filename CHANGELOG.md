@@ -3,6 +3,11 @@ All notable changes to the REDCap Entity project will be documented in this file
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## [2.3.0] - 2019-06-26
+### Changed
+- Deliver a warning if a bulk operation does not return true (Kyle Chesney)
+
+
 ## [2.2.0] - 2019-03-31
 ### Changed
 - Replacing __pendencies with __issues (Tiago Bember Simeao)
