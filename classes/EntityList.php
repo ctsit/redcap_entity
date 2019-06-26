@@ -712,13 +712,20 @@ class EntityList extends Page {
     protected function executeBulkOperation($op, $op_info, $entities) {
         foreach ($entities as $entity) {
             // TODO: check if method exists.
-            $entity->$op();
+            $op_response = $entity->$op();
         }
 
         // TODO: detect errors.
-
-        if (!empty($op_info['message'])) {
-            StatusMessageQueue::enqueue($op_info['message']);
+        if ($op_response !== true) {
+            $message = "An issue prevented $op from acting as expected";
+            if ($op_response !== false) {
+                $message .= "</br>It returned: $op_response";
+            }
+            StatusMessageQueue::enqueue($message, 'warning');
+        } else {
+            if (!empty($op_info['message'])) {
+                StatusMessageQueue::enqueue($op_info['message']);
+            }
         }
     }
 
