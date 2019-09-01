@@ -1,7 +1,7 @@
 {
     "name": "REDCap Entity API",
     "namespace": "REDCapEntity\\ExternalModule",
-    "description": "Provides an API to design, store and manage entities in REDCap. <strong><a href=\"https://github.com/ctsit/redcap_entity\">See full documentation here</a></strong>.",
+    "description": "Provides an API to design, store and manage novel datatypes in REDCap. <strong><a href=\"https://github.com/ctsit/redcap_entity\">See full documentation here</a></strong>.",
     "permissions": [
         "redcap_every_page_before_render",
         "redcap_every_page_top",
@@ -26,6 +26,11 @@
         {
             "name": "Marly Cormar",
             "email": "marlycormar@ufl.edu",
+            "institution": "University of Florida - CTSI"
+        },
+        {
+            "name": "Kyle Chesney",
+            "email": "kyle.chesney@ufl.edu",
             "institution": "University of Florida - CTSI"
         }
     ],
