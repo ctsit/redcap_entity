@@ -743,6 +743,9 @@ class EntityList extends Page {
     }
 
     protected function loadPageStyles() {
+        $this->cssFiles[] = file_exists(APP_URL_EXTMOD . 'manager/css/select2.css') ?
+            APP_URL_EXTMOD . 'manager/css/select2.css' :
+            APP_URL_EXTMOD . 'Resources/css/select2.css'; # REDCap v9.3.x moved the select2 css file
         $this->cssFiles[] = APP_URL_EXTMOD . 'manager/css/select2.css';
         $this->cssFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/css/entity_list.css');
 
