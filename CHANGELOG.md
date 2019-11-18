@@ -3,6 +3,16 @@ All notable changes to the REDCap Entity project will be documented in this file
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## [2.3.1] - 2019-11-18
+### Changed
+- Fix dropdown rendering error by updating file path for select2.css. (Kyle Chesney)
+- Fix typo in module description and README-developer.md. (Philip Chase)
+
+### Added
+- Add organizations_demo. (Philip Chase)
+- Add Kyle to authors. (Philip Chase)
+
+
 ## [2.3.0] - 2019-06-26
 ### Changed
 - Deliver a warning if a bulk operation does not return true (Kyle Chesney)

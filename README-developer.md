@@ -361,7 +361,7 @@ Don't forget to allow `redcap_module_system_enable()` hook on config.json:
 ```json
 {
    "permissions": [
-       "redcap_module_system_enabled"
+       "redcap_module_system_enable"
    ]
 }
 ```

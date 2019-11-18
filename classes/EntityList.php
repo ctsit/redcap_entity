@@ -730,7 +730,12 @@ class EntityList extends Page {
     }
 
     protected function loadPageScripts() {
-        $this->jsFiles[] = APP_URL_EXTMOD . 'manager/js/select2.js';
+        // 9.3.? has begun migrating some files from ExternalModule/manager/ to Resources/
+        // The complicated nature of this ternary is essential due to backup pathing, realpath cannot simplify this
+        // APP_PATH_EXTMOD and APP_URL_EXTMOD are not interchangeable for their respective uses
+        $this->jsFiles[] = file_exists(APP_PATH_EXTMOD . 'manager/js/select2.js') ?
+            APP_URL_EXTMOD . 'manager/js/select2.js' :
+            APP_PATH_JS . 'select2.js';
         $this->jsFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/js/entity_list.js');
         $this->jsFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/js/entity_fields.js');
 
@@ -743,7 +748,9 @@ class EntityList extends Page {
     }
 
     protected function loadPageStyles() {
-        $this->cssFiles[] = APP_URL_EXTMOD . 'manager/css/select2.css';
+        $this->cssFiles[] = file_exists(APP_PATH_EXTMOD . 'manager/css/select2.css') ?
+            APP_URL_EXTMOD . 'manager/css/select2.css' :
+            APP_PATH_CSS . 'select2.css';
         $this->cssFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/css/entity_list.css');
 
         parent::loadPageStyles();
