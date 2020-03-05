@@ -3,6 +3,13 @@ All notable changes to the REDCap Entity project will be documented in this file
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## [2.3.2] - 2020-03-05
+### Changed
+- update entityForm pages to address dropdown bug (Kyle Chesney)
+- swap user_info for row[key] when parsing emails (Kyle Chesney)
+- create AUTHORS.md, move previous devs out of config.json (Kyle Chesney)
+
+
 ## [2.3.1] - 2019-11-18
 ### Changed
 - Fix dropdown rendering error by updating file path for select2.css. (Kyle Chesney)
