@@ -62,10 +62,20 @@ class EntityForm extends Page {
             $icon = $this->type == 'update' ? 'blog_pencil' : 'blog_plus';
         }
 
-        $this->cssFiles[] = ExternalModules::$BASE_URL . 'manager/css/select2.css';
+        // 9.3.? has begun migrating some files from ExternalModule/manager/ to Resources/
+        // The complicated nature of this ternary is essential due to backup pathing, realpath cannot simplify this
+        // APP_PATH_EXTMOD and APP_URL_EXTMOD are not interchangeable for their respective uses
+        $this->cssFiles[] = file_exists(APP_PATH_EXTMOD . 'manager/css/select2.css') ?
+            APP_URL_EXTMOD . 'manager/css/select2.css' :
+            APP_PATH_CSS . 'select2.css';
         $this->cssFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/css/entity_form.css');
 
-        $this->jsFiles[] = ExternalModules::$BASE_URL . 'manager/js/select2.js';
+        // 9.3.? has begun migrating some files from ExternalModule/manager/ to Resources/
+        // The complicated nature of this ternary is essential due to backup pathing, realpath cannot simplify this
+        // APP_PATH_EXTMOD and APP_URL_EXTMOD are not interchangeable for their respective uses
+        $this->jsFiles[] = file_exists(APP_PATH_EXTMOD . 'manager/js/select2.js') ?
+            APP_URL_EXTMOD . 'manager/js/select2.js' :
+            APP_PATH_JS . 'select2.js';
         $this->jsFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/js/entity_fields.js');
 
         $this->jsSettings['redcapEntity'] = [

@@ -544,7 +544,7 @@ class EntityList extends Page {
 
                 case 'email':
                     if ($row[$key]) {
-                        $row[$key] = RCView::a(['href' => 'mailto:' . $user_info['user_email']], $row[$key]);
+                        $row[$key] = RCView::a(['href' => 'mailto:' . $row[$key]], $row[$key]);
                     }
 
                     break;
