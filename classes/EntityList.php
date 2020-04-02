@@ -149,7 +149,7 @@ class EntityList extends Page {
             $args['pid'] = PROJECT_ID;
         }
 
-        $title = RCView::i(['class' => 'fa fa-plus-circle']) . ' ';
+        $title = RCView::i(['class' => 'fa fa-plus-circle']) . ' Add ';
         $title .= isset($this->entityTypeInfo['label']) ? $this->entityTypeInfo['label'] : 'Entity';
 
         echo RCView::button([
