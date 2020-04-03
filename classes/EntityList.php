@@ -149,7 +149,7 @@ class EntityList extends Page {
             $args['pid'] = PROJECT_ID;
         }
 
-        $title = RCView::i(['class' => 'fa fa-plus-circle']) . ' ';
+        $title = RCView::i(['class' => 'fa fa-plus-circle']) . ' Add ';
         $title .= isset($this->entityTypeInfo['label']) ? $this->entityTypeInfo['label'] : 'Entity';
 
         echo RCView::button([
@@ -268,7 +268,7 @@ class EntityList extends Page {
             $output .= RCView::div(['class' => 'form-group'], $element);
         }
 
-        $output .= RCView::button(['type' => 'submit', 'class' => 'btn btn-sm btn-primary'], 'Submit');
+        $output .= RCView::button(['type' => 'submit', 'class' => 'btn btn-sm btn-primary'], 'Search');
         echo RCView::form(['id' => 'redcap-entity-exp-filters-form', 'class' => 'form-inline'], $output);
     }
 
