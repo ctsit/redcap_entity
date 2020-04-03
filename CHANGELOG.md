@@ -3,6 +3,12 @@ All notable changes to the REDCap Entity project will be documented in this file
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## [2.3.3] - 2020-04-03
+### Changed
+- add word "Add" to EntityList page button for adding entries to an entity (Kyle Chesney)
+- Change text of button that searches EntityList from misleading "Submit" to "Search" (Kyle Chesney)
+
+
 ## [2.3.2] - 2020-03-05
 ### Changed
 - update entityForm pages to address dropdown bug (Kyle Chesney)
