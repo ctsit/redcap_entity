@@ -3,6 +3,11 @@ All notable changes to the REDCap Entity project will be documented in this file
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## [2.3.4] - 2020-04-17
+### Changed
+- Prevent JSON fields from appearing to be empty in EntityForm (Kyle Chesney)
+
+
 ## [2.3.3] - 2020-04-03
 ### Changed
 - add word "Add" to EntityList page button for adding entries to an entity (Kyle Chesney)
