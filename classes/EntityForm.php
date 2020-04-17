@@ -135,6 +135,11 @@ class EntityForm extends Page {
                 }
             }
 
+            // convert JSON back to a string for proper display in fields
+            if ($info['type'] == 'json' && $data[$key] !== NULL) {
+                $data[$key] = json_encode($data[$key], JSON_PRETTY_PRINT);
+            }
+
             $data[$key] = REDCap::escapeHtml($data[$key]);
 
             $attrs = ['name' => $key, 'class' => 'form-control', 'id' => 'redcap-entity-prop-' . $key];
