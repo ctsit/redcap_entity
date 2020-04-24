@@ -2,6 +2,10 @@
 All notable changes to the REDCap Entity project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.3.5] - 2020-04-24
+### Changed
+- forms involving records no longer fail as proper scope is used (Kyle Chesney)
+
 
 ## [2.3.4] - 2020-04-17
 ### Changed
