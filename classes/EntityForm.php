@@ -180,7 +180,7 @@ class EntityForm extends Page {
             }
             elseif ($info['type'] == 'record') {
                 if (defined('PROJECT_ID')) {
-                    $info['choices'] = Records::getRecordsAsArray(PROJECT_ID);
+                    $info['choices'] = \Records::getRecordsAsArray(PROJECT_ID);
                 }
             }
             elseif ($info['type'] == 'project') {
