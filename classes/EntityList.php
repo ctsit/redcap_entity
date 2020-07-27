@@ -55,7 +55,8 @@ class EntityList extends Page {
         $fields = $this->getFields();
 
         $this->cols = array_keys($fields);
-        $this->formUrl = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/entity.php');
+        $this->externalModule = new ExternalModules();
+        $this->formUrl = $this->externalModule->getUrl(REDCAP_ENTITY_PREFIX, 'manager/entity.php');
     }
 
     function setPager($page_size, $pager_size) {

@@ -81,8 +81,8 @@ class ExternalModule extends AbstractExternalModule {
 					FROM redcap_projects p, redcap_user_rights u
 					WHERE p.project_id = u.project_id
 						AND u.username = '" . db_real_escape_string( USERID ) . "'";
-
-        $query = ExternalModules::getFrameworkInstance( $this->PREFIX )->createQuery();
+        $externalModule = new ExternalModules();
+        $query = $externalModule->getFrameworkInstance( $this->PREFIX )->createQuery();
 
         $query->add( $sql );
         $queryResults = $query->execute();
