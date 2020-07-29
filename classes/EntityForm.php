@@ -24,8 +24,7 @@ class EntityForm extends Page {
         $this->entityFactory = $entity->getFactory();
         $this->entityTypeInfo = $entity->getEntityTypeInfo();
         $this->type = $entity->getId() ? 'update' : 'create';
-        $externalModule = new ExternalModules();
-        $this->formUrl = $externalModule->getUrl(REDCAP_ENTITY_PREFIX, 'manager/entity.php');
+        $this->formUrl = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/entity.php');
     }
 
     protected function buildFieldsInfo() {
@@ -63,15 +62,13 @@ class EntityForm extends Page {
             $icon = $this->type == 'update' ? 'blog_pencil' : 'blog_plus';
         }
 
-        $externalModule = new ExternalModules();
-
         // 9.3.? has begun migrating some files from ExternalModule/manager/ to Resources/
         // The complicated nature of this ternary is essential due to backup pathing, realpath cannot simplify this
         // APP_PATH_EXTMOD and APP_URL_EXTMOD are not interchangeable for their respective uses
         $this->cssFiles[] = file_exists(APP_PATH_EXTMOD . 'manager/css/select2.css') ?
             APP_URL_EXTMOD . 'manager/css/select2.css' :
             APP_PATH_CSS . 'select2.css';
-        $this->cssFiles[] = $externalModule->getUrl(REDCAP_ENTITY_PREFIX, 'manager/css/entity_form.css');
+        $this->cssFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/css/entity_form.css');
 
         // 9.3.? has begun migrating some files from ExternalModule/manager/ to Resources/
         // The complicated nature of this ternary is essential due to backup pathing, realpath cannot simplify this
@@ -79,11 +76,11 @@ class EntityForm extends Page {
         $this->jsFiles[] = file_exists(APP_PATH_EXTMOD . 'manager/js/select2.js') ?
             APP_URL_EXTMOD . 'manager/js/select2.js' :
             APP_PATH_JS . 'select2.js';
-        $this->jsFiles[] = $externalModule->getUrl(REDCAP_ENTITY_PREFIX, 'manager/js/entity_fields.js');
+        $this->jsFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/js/entity_fields.js');
 
         $this->jsSettings['redcapEntity'] = [
-            'entityReferenceUrl' => $externalModule->getUrl(REDCAP_ENTITY_PREFIX, 'manager/ajax/entity_reference.php'),
-            'projectReferenceUrl' => $externalModule->getUrl(REDCAP_ENTITY_PREFIX, 'manager/ajax/entity_project_list.php')
+            'entityReferenceUrl' => ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/ajax/entity_reference.php'),
+            'projectReferenceUrl' => ExternalModules::getUrl(REDCAP_ENTITY_PREFIX,  'manager/ajax/entity_project_list.php')
         ];
 
         parent::render($context, $title, $icon);
