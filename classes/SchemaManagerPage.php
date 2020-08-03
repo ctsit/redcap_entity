@@ -6,6 +6,7 @@ use REDCapEntity\Page;
 use REDCapEntity\EntityDB;
 use REDCapEntity\EntityFactory;
 use REDCapEntity\StatusMessageQueue;
+use REDCapEntity\ExternalModule\ExternalModule;
 use ExternalModules\ExternalModules;
 
 class SchemaManagerPage extends Page {
@@ -29,10 +30,11 @@ class SchemaManagerPage extends Page {
         $rows = [];
         $form = RCView::hidden(['name' => 'operation']) . RCView::hidden(['name' => 'entity_type']);
         echo RCView::form(['id' => 'entity_type_table_operation', 'method' => 'post'], $form);
+        $externalModule = new ExternalModule();
 
         foreach ($factory->getEntityTypes('all') as $type => $info) {
-            $info['module'] = ExternalModules::getConfig($info['module']);
-            $info['module'] = $info['module']['name'];
+            $externalModule->PREFIX = $info['module'];
+            $info['module'] = $externalModule->getModuleName();
 
             $info['id'] = $type;
             $info['count'] = '-';
@@ -151,8 +153,8 @@ class SchemaManagerPage extends Page {
             'rows' => $rows,
         ]);
 
-        $this->jsFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/js/entity_schema_manager.js');
-        $this->cssFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/css/schema_manager.css');
+        $this->jsFiles[] = $this->getEntityUrl('manager/js/entity_schema_manager.js');
+        $this->cssFiles[] = $this->getEntityUrl('manager/css/schema_manager.css');
     }
 
     // TODO: move it to a Trait class.

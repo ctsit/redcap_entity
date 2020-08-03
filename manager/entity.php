@@ -1,7 +1,7 @@
 <?php
 
-use ExternalModules\ExternalModules;
 use REDCapEntity\EntityFactory;
+use REDCapEntity\ExternalModule\ExternalModule;
 
 if (!isset($_GET['entity_type'])) {
     redirect(APP_PATH_WEBROOT_PARENT);
@@ -37,7 +37,10 @@ if (!isset($class)) {
         $class = $info['form_class']['name'];
 
         if (!empty($info['form_class']['path'])) {
-            $base_path = ExternalModules::getModuleDirectoryPath($info['module']); 
+            $externalModule = new ExternalModule();
+            $externalModule->PREFIX = $info['module'];
+
+            $base_path = $externalModule->getModulePath();
             include_once $base_path . '/' . $info['form_class']['path'];
         }
 

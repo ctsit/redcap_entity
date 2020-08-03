@@ -55,7 +55,7 @@ class EntityList extends Page {
         $fields = $this->getFields();
 
         $this->cols = array_keys($fields);
-        $this->formUrl = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/entity.php');
+        $this->formUrl = $this->getEntityUrl('manager/entity.php');
     }
 
     function setPager($page_size, $pager_size) {
@@ -736,12 +736,12 @@ class EntityList extends Page {
         $this->jsFiles[] = file_exists(APP_PATH_EXTMOD . 'manager/js/select2.js') ?
             APP_URL_EXTMOD . 'manager/js/select2.js' :
             APP_PATH_JS . 'select2.js';
-        $this->jsFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/js/entity_list.js');
-        $this->jsFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/js/entity_fields.js');
+        $this->jsFiles[] = $this->getEntityUrl('manager/js/entity_list.js');
+        $this->jsFiles[] = $this->getEntityUrl('manager/js/entity_fields.js');
 
         $this->jsSettings['redcapEntity'] = [
-            'entityReferenceUrl' => ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/ajax/entity_reference.php'),
-            'projectReferenceUrl' => ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/ajax/entity_project_list.php')
+            'entityReferenceUrl' => $this->getEntityUrl( 'manager/ajax/entity_reference.php' ),
+            'projectReferenceUrl' => $this->getEntityUrl( 'manager/ajax/entity_project_list.php' )
         ];
 
         parent::loadPageScripts();
@@ -751,7 +751,7 @@ class EntityList extends Page {
         $this->cssFiles[] = file_exists(APP_PATH_EXTMOD . 'manager/css/select2.css') ?
             APP_URL_EXTMOD . 'manager/css/select2.css' :
             APP_PATH_CSS . 'select2.css';
-        $this->cssFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/css/entity_list.css');
+        $this->cssFiles[] = $this->getEntityUrl( 'manager/css/entity_list.css' );
 
         parent::loadPageStyles();
     }

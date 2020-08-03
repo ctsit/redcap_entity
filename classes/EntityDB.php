@@ -4,11 +4,13 @@ namespace REDCapEntity;
 
 use ExternalModules\ExternalModules;
 use REDCapEntity\EntityFactory;
+use REDCapEntity\ExternalModule\ExternalModule;
 
 class EntityDB {
 
     static function buildSchema($module_prefix, $reset_tables = false) {
-        if (!ExternalModules::getEnabledVersion($module_prefix)) {
+        $externalModule = new ExternalModule();
+        if ( !$externalModule->VERSION ) {
             return;
         }
 
@@ -22,7 +24,8 @@ class EntityDB {
     }
 
     static function dropSchema($module_prefix) {
-        if (!ExternalModules::getEnabledVersion($module_prefix)) {
+        $externalModule = new ExternalModule();
+        if (!$externalModule->VERSION) {
             return;
         }
 

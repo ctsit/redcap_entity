@@ -5,11 +5,13 @@ namespace REDCapEntity;
 use HtmlPage;
 use REDCap;
 use RCView;
+use REDCapEntity\ExternalModule\ExternalModule;
 
 abstract class Page {
     protected $jsFiles = [];
     protected $jsSettings = [];
     protected $cssFiles = [];
+    protected $externalModule;
 
     abstract protected function renderPageBody();
 
@@ -71,6 +73,30 @@ abstract class Page {
         else {
             include_once APP_PATH_DOCROOT . $footer_path;
         }
+    }
+
+    /**
+     * getEntityUrl
+     *
+     * Get the url based off the entity module instead of the module using entity
+     *
+     * @param $path
+     */
+    function getEntityUrl( $path ) {
+
+        // Create an instance if needed.
+        if ( !$this->externalModule ) {
+            $this->externalModule = new ExternalModule();
+        }
+        // Hold on to the module prefix in the case its required.
+        $modulePrefix = $this->externalModule->PREFIX;
+        // Set the prefix to the entity prefix instead of the modules prefix
+        $this->externalModule->PREFIX = REDCAP_ENTITY_PREFIX;
+        $url = $this->externalModule->getUrl( $path );
+        // Return the module prefix
+        $this->externalModule->PREFIX = $modulePrefix;
+
+        return $url;
     }
 
     protected function checkPermissions($context) {
