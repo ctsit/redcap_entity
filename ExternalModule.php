@@ -69,4 +69,37 @@ class ExternalModule extends AbstractExternalModule {
     protected function setJsSettings($settings) {
         echo '<script>redcapEntity = ' . json_encode($settings) . ';</script>';
     }
+
+    /**
+     * @return \string[][]
+     * @throws \Exception
+     */
+    public function getProjectList() {
+
+        // get the project list that conforms to the user rights of the current user
+        $sql = "SELECT p.project_id, p.app_title
+					FROM redcap_projects p, redcap_user_rights u
+					WHERE p.project_id = u.project_id
+						AND u.username = '" . db_real_escape_string( USERID ) . "'";
+
+        $queryResults = $this->query( $sql, [] );
+
+        // get the Array
+        $resultArray = $queryResults->fetch_all( MYSQLI_ASSOC );
+        // Define the array with the Blank entry to be first.
+        $listArray = [ [ "id" => "", "text" => "--- None ---" ] ];
+        foreach ( $resultArray as $result ) {
+            // Translate the data to the standard output
+            $id = $result["project_id"];
+            $name = $result["app_title"];
+
+            // Accumulate the translated data
+            $listArray[] = [
+                'id'   => $id,
+                'text' => "($id) $name"
+            ];
+        };
+
+        return $listArray;
+    }
 }
