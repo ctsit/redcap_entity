@@ -741,7 +741,7 @@ class EntityList extends Page {
 
         $this->jsSettings['redcapEntity'] = [
             'entityReferenceUrl' => ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/ajax/entity_reference.php'),
-            'projectReferenceUrl' => ExternalModules::$BASE_URL . 'manager/ajax/get-project-list.php',
+            'projectReferenceUrl' => ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/ajax/entity_project_list.php')
         ];
 
         parent::loadPageScripts();
