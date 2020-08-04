@@ -84,6 +84,19 @@ abstract class Page {
      */
     function getEntityUrl( $path ) {
 
+        return $this->getPrefixedUrl( REDCAP_ENTITY_PREFIX, $path );
+    }
+
+    /**
+     * getPrefixedUrl
+     *
+     * Get the url prefixed as chosen instead of the module using entity
+     *
+     * @param $prefix
+     * @param $path
+     */
+    function getPrefixedUrl( $prefix, $path ) {
+
         // Create an instance if needed.
         if ( !$this->externalModule ) {
             $this->externalModule = new ExternalModule();
@@ -91,7 +104,7 @@ abstract class Page {
         // Hold on to the module prefix in the case its required.
         $modulePrefix = $this->externalModule->PREFIX;
         // Set the prefix to the entity prefix instead of the modules prefix
-        $this->externalModule->PREFIX = REDCAP_ENTITY_PREFIX;
+        $this->externalModule->PREFIX = $prefix;
         $url = $this->externalModule->getUrl( $path );
         // Return the module prefix
         $this->externalModule->PREFIX = $modulePrefix;
