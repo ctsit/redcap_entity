@@ -12,6 +12,7 @@ require_once 'EntityQuery.php';
 use Exception;
 use ExternalModules\ExternalModules;
 use REDCapEntity\EntityQuery;
+use REDCapEntity\ExternalModule\ExternalModule;
 
 define('ENTITY_TYPE_INVALID', 'invalid');
 define('ENTITY_TYPE_PENDING', 'pending');
@@ -33,7 +34,7 @@ class EntityFactory {
     /**
      * Loads entity types of a given module.
      *
-     * @param object $module
+     * @param ExternalModule $module
      *   The module object.
      *
      * @return array|bool
@@ -50,7 +51,7 @@ class EntityFactory {
         }
 
         $valid_property_types = $this->getValidPropertyTypes();
-        $base_path = ExternalModules::getModuleDirectoryPath($module->PREFIX, $module->VERSION);
+        $base_path = $module->getModulePath();
 
         foreach ($this->getValidStatuses() as $status) {
             $types[$status] = [];
@@ -76,7 +77,7 @@ class EntityFactory {
             $class = '\REDCapEntity\Entity';
 
             if (isset($info['class']['path'])) {
-                $path = $base_path . '/' . $info['class']['path'];
+                $path = $base_path . $info['class']['path'];
 
                 if (file_exists($path)) {
                     require_once $path;

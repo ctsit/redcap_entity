@@ -2,11 +2,9 @@
 
 namespace REDCapEntity;
 
-use ExternalModules\ExternalModules;
 use RCView;
 use REDCap;
-use REDCapEntity\Entity;
-use REDCapEntity\StatusMessageQueue;
+use REDCapEntity\Page;
 use ToDoList;
 use User;
 
@@ -24,7 +22,7 @@ class EntityForm extends Page {
         $this->entityFactory = $entity->getFactory();
         $this->entityTypeInfo = $entity->getEntityTypeInfo();
         $this->type = $entity->getId() ? 'update' : 'create';
-        $this->formUrl = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/entity.php');
+        $this->formUrl = $this->getEntityUrl('manager/entity.php');
     }
 
     protected function buildFieldsInfo() {
@@ -68,7 +66,7 @@ class EntityForm extends Page {
         $this->cssFiles[] = file_exists(APP_PATH_EXTMOD . 'manager/css/select2.css') ?
             APP_URL_EXTMOD . 'manager/css/select2.css' :
             APP_PATH_CSS . 'select2.css';
-        $this->cssFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/css/entity_form.css');
+        $this->cssFiles[] = $this->getEntityUrl('manager/css/entity_form.css');
 
         // 9.3.? has begun migrating some files from ExternalModule/manager/ to Resources/
         // The complicated nature of this ternary is essential due to backup pathing, realpath cannot simplify this
@@ -76,11 +74,11 @@ class EntityForm extends Page {
         $this->jsFiles[] = file_exists(APP_PATH_EXTMOD . 'manager/js/select2.js') ?
             APP_URL_EXTMOD . 'manager/js/select2.js' :
             APP_PATH_JS . 'select2.js';
-        $this->jsFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/js/entity_fields.js');
+        $this->jsFiles[] = $this->getEntityUrl('manager/js/entity_fields.js');
 
         $this->jsSettings['redcapEntity'] = [
-            'entityReferenceUrl' => ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/ajax/entity_reference.php'),
-            'projectReferenceUrl' => ExternalModules::getUrl(REDCAP_ENTITY_PREFIX,  'manager/ajax/entity_project_list.php')
+            'entityReferenceUrl' => $this->getEntityUrl('manager/ajax/entity_reference.php'),
+            'projectReferenceUrl' => $this->getEntityUrl('manager/ajax/entity_project_list.php')
         ];
 
         parent::render($context, $title, $icon);
