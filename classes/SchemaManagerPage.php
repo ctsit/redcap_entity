@@ -14,6 +14,7 @@ class SchemaManagerPage extends Page {
 
         if (
             $_SERVER['REQUEST_METHOD'] == 'POST' &&
+            $this->checkCsrfToken() &&
             !empty($_POST['entity_type']) &&
             !empty($_POST['operation']) &&
             in_array($_POST['operation'], ['build', 'drop']) &&
@@ -159,5 +160,18 @@ class SchemaManagerPage extends Page {
     protected function loadTemplate($template, $vars = []) {
         extract($vars);
         include dirname(__DIR__) . '/templates/' . $template . '.php';
+    }
+
+    protected function checkCsrfToken() {
+        /* REDCap core considers External Module pages exempt from usual CSRF checks
+         * See: checkCsrfToken in Classes/System.php
+         */
+        if (!empty($_REQUEST['redcap_csrf_token'])) {
+            // below function call is void but calls exit on failure
+            \System::forceCsrfTokenCheck($_REQUEST['redcap_csrf_token']);
+            return true;
+        }
+
+        return false;
     }
 }
