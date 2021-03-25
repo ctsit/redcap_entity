@@ -2,6 +2,12 @@
 All notable changes to the REDCap Entity project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.3.6] - 2021-03-25
+### Changed
+- add and implements checkCsrfToken in SchemaManagerPage to eliminate CSRF vulnerability (Kyle Chesney)
+- replace deprecated get-project-list call with module specific implementation (James Pence)
+
+
 ## [2.3.5] - 2020-04-24
 ### Changed
 - forms involving records no longer fail as proper scope is used (Kyle Chesney)
