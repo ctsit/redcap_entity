@@ -37,7 +37,7 @@ class EntityQuery {
             $cond .= 'IN ("' . implode('", "', array_map('db_escape', $value)) . '")';
         }
         elseif ($value === null) {
-            $cond = 'IS NULL';
+            $cond .= 'IS NULL';
         }
         else {
             if (is_bool($value)) {
