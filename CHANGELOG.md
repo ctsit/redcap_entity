@@ -2,6 +2,12 @@
 All notable changes to the REDCap Entity project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+
+## [2.3.7] - 2022-09-01
+### Changed
+- Update EntityQuery.php to fix IS NULL condition (Andy Martin)
+
+
 ## [2.3.6] - 2021-03-25
 ### Changed
 - add and implements checkCsrfToken in SchemaManagerPage to eliminate CSRF vulnerability (Kyle Chesney)
