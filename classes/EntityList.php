@@ -733,9 +733,13 @@ class EntityList extends Page {
         // 9.3.? has begun migrating some files from ExternalModule/manager/ to Resources/
         // The complicated nature of this ternary is essential due to backup pathing, realpath cannot simplify this
         // APP_PATH_EXTMOD and APP_URL_EXTMOD are not interchangeable for their respective uses
+        // 10.? removed select2 from Resources, it appears available in core itself but just to be safe get 4.0.5 from CDN
         $this->jsFiles[] = file_exists(APP_PATH_EXTMOD . 'manager/js/select2.js') ?
             APP_URL_EXTMOD . 'manager/js/select2.js' :
-            APP_PATH_JS . 'select2.js';
+                         (file_exists(APP_PATH_JS . 'select2.js') ?
+                          APP_PATH_JS . 'select2.js' :
+                          "https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.5/js/select2.min.js"
+                         );
         $this->jsFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/js/entity_list.js');
         $this->jsFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/js/entity_fields.js');
 
@@ -750,7 +754,10 @@ class EntityList extends Page {
     protected function loadPageStyles() {
         $this->cssFiles[] = file_exists(APP_PATH_EXTMOD . 'manager/css/select2.css') ?
             APP_URL_EXTMOD . 'manager/css/select2.css' :
-            APP_PATH_CSS . 'select2.css';
+            (file_exists(APP_PATH_CSS . 'select2.css') ?
+             APP_PATH_CSS . 'select2.css':
+             'https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.5/css/select2.min.css'
+            );
         $this->cssFiles[] = ExternalModules::getUrl(REDCAP_ENTITY_PREFIX, 'manager/css/entity_list.css');
 
         parent::loadPageStyles();
