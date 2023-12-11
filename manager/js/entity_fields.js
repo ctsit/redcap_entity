@@ -31,20 +31,21 @@ $(function() {
     $('select.redcap-entity-select-project').each(function() {
         var label = $('label[for="' + $(this).prop('id') + '"]').text();
 
-        $(this).select2({
-            placeholder: '-- ' + label + '--',
-            allowClear: true,
-            ajax: {
-                url: redcapEntity.projectReferenceUrl,
-                dataType: 'json',
-                cache: true,
-                delay: 250,
-                data: function (params) {
-                    return {
-                        'parameters': params.term
-                    };
-                }
-            }
+        let element = $(this);
+
+        // select2's built-in ajax functionality disables select2 filtering
+        // instead populate options with array from a completed ajax call
+        // See: https:select2.org/data-sources/ajax#transforming-response-data
+        $.ajax({
+            type: 'GET',
+            url: redcapEntity.projectReferenceUrl,
+            dataType: 'json'
+        }).then(function (data) {
+            element.select2({
+                placeholder: '-- ' + label + '--',
+                allowClear: true,
+                data: data.results
+            })
         });
     });
 

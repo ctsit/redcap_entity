@@ -2,6 +2,11 @@
 All notable changes to the REDCap Entity project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.3.8] - 2023-12-11
+### Changed
+- Add namespace to SchemaManagerPage Clears PSALM errors (@ChemiKyle, #36)
+- Fix implementaiton of Select2 in project dropdowns (@ChemiKyle, #32)
+
 
 ## [2.3.7] - 2022-09-01
 ### Changed

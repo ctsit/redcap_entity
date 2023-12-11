@@ -1,5 +1,7 @@
 <?php
 
+namespace REDCapEntity\ExternalModule;
+
 require_once 'Page.php';
 
 use REDCapEntity\Page;
