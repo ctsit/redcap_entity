@@ -78,9 +78,16 @@ class ExternalModule extends AbstractExternalModule {
 
         // get the project list that conforms to the user rights of the current user
         $sql = "SELECT p.project_id, p.app_title
-					FROM redcap_projects p, redcap_user_rights u
-					WHERE p.project_id = u.project_id
-						AND u.username = '" . db_real_escape_string( USERID ) . "'";
+                    FROM redcap_projects p, redcap_user_rights u
+                    WHERE p.project_id = u.project_id
+                        AND u.username = '" . db_real_escape_string( USERID ) . "'";
+
+        if (SUPER_USER) {
+            $sql = "SELECT p.project_id, p.app_title
+                    FROM redcap_projects p
+                    WHERE p.project_id > 15
+                    AND p.date_deleted IS NULL";
+        }
 
         $queryResults = $this->query( $sql, [] );
 
