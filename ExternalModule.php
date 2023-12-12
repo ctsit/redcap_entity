@@ -80,6 +80,7 @@ class ExternalModule extends AbstractExternalModule {
         $sql = "SELECT p.project_id, p.app_title
                     FROM redcap_projects p, redcap_user_rights u
                     WHERE p.project_id = u.project_id
+                        AND p.date_deleted IS NULL
                         AND u.username = '" . db_real_escape_string( USERID ) . "'";
 
         if (SUPER_USER) {
