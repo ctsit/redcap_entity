@@ -1,6 +1,6 @@
 <?php
 
-namespace REDCapEntity\ExternalModule;
+namespace REDCapEntity;
 
 require_once 'Page.php';
 
@@ -9,6 +9,10 @@ use REDCapEntity\EntityDB;
 use REDCapEntity\EntityFactory;
 use REDCapEntity\StatusMessageQueue;
 use ExternalModules\ExternalModules;
+
+use HtmlPage;
+use REDCap;
+use RCView;
 
 class SchemaManagerPage extends Page {
     protected function renderPageBody() {
