@@ -2,6 +2,13 @@
 All notable changes to the REDCap Entity project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.3.9] - 2023-12-12
+### Changed
+- Add a no-deleted-projects contraint in getProjectList (@ChemiKyle, @pbchase, #39)
+- Restructure includes and namespacing for SchemaManagerPage to re-enable (@ChemiKyle, #39)
+- Update getProjectList to prevent filtering by user access if user is admin (@ChemiKyle, #38, #39)
+- Add Andy Martin to AUTHORS.md (@pbchase)
+
 ## [2.3.8] - 2023-12-11
 ### Changed
 - Add namespace to SchemaManagerPage Clears PSALM errors (@ChemiKyle, #36)
